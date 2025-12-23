@@ -1563,6 +1563,27 @@
             font-size: 12px;
         }
 
+        /* Style select type calcul */
+        #marge-type {
+            font-weight: 600;
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
+            padding: 9px 11px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #marge-type:focus {
+            outline: none;
+            border-color: #111827;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+        }
+
+        #marge-help {
+            font-style: italic;
+        }
+
     </style>
 </head>
 <body>
@@ -2155,10 +2176,23 @@
                                 <label>Marge totale</label>
                                 <input type="text" id="vente-marge-total" readonly>
                             </div>
+                            <!-- ✅ VAOVAO: Switch Type Calcul -->
                             <div class="form-group">
-                                <label>Marge (%) cible</label>
-                                <input type="number" id="vente-marge-pct" min="0" max="95" value="30" oninput="suggestPrixVenteFromMarge()">
+                                <label>Type de calcul</label>
+                                <select id="marge-type" onchange="changerTypeCalcul()">
+                                    <option value="markup">Markup (% sur coût d'achat)</option>
+                                    <option value="marge">Marge (% sur prix de vente)</option>
+                                </select>
                             </div>
+
+                            <div class="form-group">
+                                <label id="marge-label">Markup (%)</label>
+                                <input type="number" id="vente-marge-pct" min="0" max="200" value="30" oninput="suggestPrixVenteFromMarge()">
+                                <small id="marge-help" style="display:block; margin-top:4px; color:#6b7280; font-size:11px;">
+                                    Ex: 50% → Prix vente = Prix achat × 1.50
+                                </small>
+                            </div>
+
                         </div>
                         
                         <!-- ✅ BOUTON EN BAS À DROITE -->
@@ -3067,25 +3101,56 @@
             document.getElementById('vente-marge-total').value = margeTot.toLocaleString() + ' Ar';
         }
 
-        function suggestPrixVenteFromMarge(){
-            const p = document.getElementById('vente-produit-selected').value;
-            const q = parseFloat(document.getElementById('vente-quantite').value) || 0;
-            const margePct = parseFloat(document.getElementById('vente-marge-pct').value) || 0;
-
-            if(!p || !stock[p] || q <= 0) return;
-
-            const r = previewCogsForCurrentSale(p, q);
-            if(!r.ok) return;
-
-            const paUnit = (r.cogs / q);
-            const m = Math.min(Math.max(margePct, 0), 95) / 100; // 0..0.95
-            const pvUnit = paUnit / (1 - m);
-
-            document.getElementById('vente-prix').value = Math.ceil(pvUnit); // arrondi supérieur
-            updateVenteCostAndMargeUI();
+        // ✅ NOUVELLE FONCTION: Changer type calcul
+        function changerTypeCalcul() {
+            const type = document.getElementById('marge-type').value;
+            const label = document.getElementById('marge-label');
+            const help = document.getElementById('marge-help');
+            const input = document.getElementById('vente-marge-pct');
+            
+            if (type === 'markup') {
+                // MARKUP mode
+                label.textContent = 'Markup (%)';
+                help.textContent = 'Ex: 50% → Prix vente = Prix achat × 1.50';
+                input.max = 200; // Pas de limite pratique
+            } else {
+                // MARGE mode
+                label.textContent = 'Marge (%)';
+                help.textContent = 'Ex: 50% → Marge = 50% du prix de vente';
+                input.max = 95; // Max 95% pour éviter division par 0
+            }
+            
+            // Re-calculer prix
+            suggestPrixVenteFromMarge();
         }
 
-
+        function suggestPrixVenteFromMarge() {
+            const p = document.getElementById('vente-produit-selected').value;
+            const q = parseFloat(document.getElementById('vente-quantite').value) || 0;
+            const pct = parseFloat(document.getElementById('vente-marge-pct').value) || 0;
+            const type = document.getElementById('marge-type').value;
+            
+            if(!p || !stock[p] || q <= 0) return;
+            
+            const r = previewCogsForCurrentSale(p, q);
+            if(!r.ok) return;
+            
+            const paUnit = r.cogs / q; // Prix achat unitaire
+            let pvUnit;
+            
+            if (type === 'markup') {
+                // ✅ MODE MARKUP: PV = PA × (1 + markup%)
+                const markup = pct / 100; // Ex: 50% = 0.50
+                pvUnit = paUnit * (1 + markup);
+            } else {
+                // ✅ MODE MARGE: PV = PA / (1 - marge%)
+                const m = Math.min(Math.max(pct, 0), 95) / 100; // Clamp 0-95%
+                pvUnit = paUnit / (1 - m);
+            }
+            
+            document.getElementById('vente-prix').value = Math.ceil(pvUnit);
+            updateVenteCostAndMargeUI();
+        }
 
         function validerVente() {
             if(!articlesVente.length) {
