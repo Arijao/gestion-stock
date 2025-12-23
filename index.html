@@ -2,10 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Achat/Vente Complète</title>
-
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Application gestion stock, achats et ventes">
+    <title>Gestion Achat-Vente</title>
+    
+    <!-- ✅ PWA META TAGS -->
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#111827">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -6030,6 +6032,40 @@
 
         // ✅ Lancer vérification backup 5 secondes après chargement
         setTimeout(verifierDernierBackup, 5000);
+
+        // ✅ SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker enregistré:', registration);
+                        
+                        // Update automatique
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    console.log('🔄 Nouvelle version disponible');
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Erreur Service Worker:', error);
+                    });
+            });
+        }
+
+        // ✅ Détecter connexion/déconnexion
+        window.addEventListener('online', () => {
+            console.log('✅ Connexion rétablie');
+            // Optional: afficher notification
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('⚠️ Mode hors ligne');
+            // Optional: afficher notification
+        });
 
     </script>
 </body>
