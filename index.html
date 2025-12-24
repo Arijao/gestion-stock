@@ -1980,7 +1980,7 @@
                                 <i class="fa-regular fa-calendar"></i>
                             </button>
                             <!-- ⭐ Date picker invisible -->
-                            <input type="date" id="dash-date-picker" style="visibility:hidden; position:absolute; left:-9999px;">
+                            <input type="date" id="dash-date-picker" style="visibility:hidden; position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;">
                             
                             <button class="icon-btn" title="Messages"><i class="fa-regular fa-comment-dots"></i></button>
                             <button class="icon-btn" id="notif-btn" title="Notifications" onclick="toggleNotifications()">
@@ -2838,6 +2838,7 @@
             document.getElementById('achat-date').value = today;
             document.getElementById('vente-date').value = today;
             genererNumeroVente();
+            masquerDatePicker();
 
         };
 
@@ -4350,25 +4351,75 @@
                 datePicker.value = new Date().toISOString().split('T')[0];
             }
             
-            // Écouter changement
+            // ✅ Retirer ancien onchange pour éviter les doublons
+            datePicker.onchange = null;
+            
+            // Écouter changement UNE SEULE FOIS
             datePicker.onchange = function() {
-                const selectedDate = new Date(this.value);
+                const dateValue = this.value;
                 
-                // Message de confirmation
-                alert(`📅 Date: ${selectedDate.toLocaleDateString('fr-FR')}`);
+                if (!dateValue) {
+                    console.warn('⚠️ Aucune date sélectionnée');
+                    masquerDatePicker();
+                    return;
+                }
                 
-                // Mettre à jour dashboard
-                updateDashboard();
-                drawRevenueChart();
+                try {
+                    const selectedDate = new Date(dateValue + 'T00:00:00');
+                    
+                    // Vérifier date valide
+                    if (isNaN(selectedDate.getTime())) {
+                        throw new Error('Date invalide');
+                    }
+                    
+                    // Message de confirmation
+                    alert(`📅 ${selectedDate.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    })}`);
+                    
+                    // Mettre à jour dashboard
+                    updateDashboard();
+                    if (typeof drawRevenueChart === 'function') {
+                        drawRevenueChart();
+                    }
+                    
+                } catch (err) {
+                    console.error('❌ Erreur date:', err);
+                    alert('❌ Date invalide');
+                }
                 
-                // Masquer à nouveau (iOS)
-                setTimeout(() => {
-                    datePicker.style.visibility = 'hidden';
-                    datePicker.style.position = 'absolute';
-                }, 100);
+                // ✅ Masquer le picker après sélection
+                masquerDatePicker();
             };
             
-            // ✅ iOS-compatible: rendre visible temporairement
+            // ✅ Afficher temporairement (iOS/iPhone compatible)
+            afficherDatePicker();
+            
+            // Focus + ouverture
+            setTimeout(() => {
+                datePicker.focus();
+                
+                // Essayer showPicker() (Chrome/Android)
+                if (typeof datePicker.showPicker === 'function') {
+                    try {
+                        datePicker.showPicker();
+                    } catch (err) {
+                        // iOS: click() en fallback
+                        datePicker.click();
+                    }
+                } else {
+                    // iOS Safari
+                    datePicker.click();
+                }
+            }, 50);
+        }
+
+        function afficherDatePicker() {
+            const datePicker = document.getElementById('dash-date-picker');
+            if (!datePicker) return;
+            
             datePicker.style.visibility = 'visible';
             datePicker.style.position = 'fixed';
             datePicker.style.top = '50%';
@@ -4379,24 +4430,25 @@
             datePicker.style.pointerEvents = 'auto';
             datePicker.style.width = 'auto';
             datePicker.style.height = 'auto';
-            
-            // Focus pour ouvrir le picker iOS
-            datePicker.focus();
-            
-            // Fallback: essayer showPicker() si disponible (Android/Chrome)
-            if (typeof datePicker.showPicker === 'function') {
-                try {
-                    datePicker.showPicker();
-                } catch (err) {
-                    console.warn('⚠️ showPicker() non supporté, utilisation du focus');
-                }
-            } else {
-                // iOS: click() après un court délai
-                setTimeout(() => {
-                    datePicker.click();
-                }, 50);
-            }
+            datePicker.style.padding = '10px';
+            datePicker.style.border = '2px solid #111827';
+            datePicker.style.borderRadius = '10px';
+            datePicker.style.background = 'white';
+            datePicker.style.fontSize = '14px';
         }
+
+        function masquerDatePicker() {
+            const datePicker = document.getElementById('dash-date-picker');
+            if (!datePicker) return;
+            
+            datePicker.style.visibility = 'hidden';
+            datePicker.style.position = 'absolute';
+            datePicker.style.left = '-9999px';
+            datePicker.style.top = '-9999px';
+            datePicker.style.opacity = '0';
+            datePicker.style.pointerEvents = 'none';
+        }
+
 
 
         function updateDashStockCard(){
@@ -6098,15 +6150,43 @@
             dropdown.style.display = isVisible ? 'none' : 'block';
         }
 
-        // Fermer menu si click dehors
+        // ✅ GESTION GLOBALE: Fermer dropdowns et date picker si click dehors
         document.addEventListener('click', function(e) {
-            const dropdown = document.getElementById('periode-dropdown');
-            const btn = e.target.closest('.btn-dots');
+            // 1) Date picker
+            const datePicker = document.getElementById('dash-date-picker');
+            const calendarBtn = document.getElementById('dash-calendar-btn');
             
-            if (!btn && dropdown) {
-                dropdown.style.display = 'none';
+            if (datePicker && calendarBtn) {
+                // Si click en dehors du picker et du bouton calendrier
+                if (e.target !== datePicker && e.target !== calendarBtn && !calendarBtn.contains(e.target)) {
+                    masquerDatePicker();
+                }
+            }
+            
+            // 2) Dropdown période ventes
+            const periodeDropdown = document.getElementById('periode-dropdown');
+            const isBtnDots = e.target.closest('.btn-dots');
+            
+            if (!isBtnDots && periodeDropdown) {
+                periodeDropdown.style.display = 'none';
+            }
+            
+            // 3) Dropdown période transactions
+            const transDropdown = document.getElementById('transactions-dropdown');
+            
+            if (!isBtnDots && transDropdown) {
+                transDropdown.style.display = 'none';
+            }
+            
+            // 4) Dropdown notifications
+            const notifDropdown = document.getElementById('notif-dropdown');
+            const notifBtn = document.getElementById('notif-btn');
+            
+            if (notifDropdown && notifBtn && e.target !== notifBtn && !notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+                notifDropdown.style.display = 'none';
             }
         });
+
 
         function changerPeriode(jours) {
             periodeActive = jours;
