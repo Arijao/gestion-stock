@@ -1980,7 +1980,7 @@
                                 <i class="fa-regular fa-calendar"></i>
                             </button>
                             <!-- ⭐ Date picker invisible -->
-                            <input type="date" id="dash-date-picker" style="position:absolute; opacity:0; pointer-events:none;">
+                            <input type="date" id="dash-date-picker" style="visibility:hidden; position:absolute; left:-9999px;">
                             
                             <button class="icon-btn" title="Messages"><i class="fa-regular fa-comment-dots"></i></button>
                             <button class="icon-btn" id="notif-btn" title="Notifications" onclick="toggleNotifications()">
@@ -4340,6 +4340,11 @@
         function ouvrirDatePicker() {
             const datePicker = document.getElementById('dash-date-picker');
             
+            if (!datePicker) {
+                console.error('❌ Date picker introuvable');
+                return;
+            }
+            
             // Valeur par défaut = aujourd'hui
             if (!datePicker.value) {
                 datePicker.value = new Date().toISOString().split('T')[0];
@@ -4348,21 +4353,51 @@
             // Écouter changement
             datePicker.onchange = function() {
                 const selectedDate = new Date(this.value);
-                const dateStr = this.value;
                 
-                // Afficher message
-                alert(`📅 Date sélectionnée: ${selectedDate.toLocaleDateString('fr-FR')}\n\nFiltre appliqué au dashboard.`);
+                // Message de confirmation
+                alert(`📅 Date: ${selectedDate.toLocaleDateString('fr-FR')}`);
                 
-                // Mettre à jour dashboard (tu peux personnaliser la logique ici)
+                // Mettre à jour dashboard
                 updateDashboard();
+                drawRevenueChart();
                 
-                // Optionnel: rafraîchir chart avec filtre date
-                // drawRevenueChart();
+                // Masquer à nouveau (iOS)
+                setTimeout(() => {
+                    datePicker.style.visibility = 'hidden';
+                    datePicker.style.position = 'absolute';
+                }, 100);
             };
             
-            // Ouvrir le picker natif
-            datePicker.showPicker ? datePicker.showPicker() : datePicker.click();
+            // ✅ iOS-compatible: rendre visible temporairement
+            datePicker.style.visibility = 'visible';
+            datePicker.style.position = 'fixed';
+            datePicker.style.top = '50%';
+            datePicker.style.left = '50%';
+            datePicker.style.transform = 'translate(-50%, -50%)';
+            datePicker.style.zIndex = '9999';
+            datePicker.style.opacity = '1';
+            datePicker.style.pointerEvents = 'auto';
+            datePicker.style.width = 'auto';
+            datePicker.style.height = 'auto';
+            
+            // Focus pour ouvrir le picker iOS
+            datePicker.focus();
+            
+            // Fallback: essayer showPicker() si disponible (Android/Chrome)
+            if (typeof datePicker.showPicker === 'function') {
+                try {
+                    datePicker.showPicker();
+                } catch (err) {
+                    console.warn('⚠️ showPicker() non supporté, utilisation du focus');
+                }
+            } else {
+                // iOS: click() après un court délai
+                setTimeout(() => {
+                    datePicker.click();
+                }, 50);
+            }
         }
+
 
         function updateDashStockCard(){
             const statusEl = document.getElementById('dash-stock-status');
