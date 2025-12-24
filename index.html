@@ -2577,7 +2577,23 @@
             });
         }
 
+        function withErrorHandling(asyncFn, successMsg = null) {
+            return async function(...args) {
+                try {
+                    const result = await asyncFn.apply(this, args);
+                    if (successMsg) console.log('✅', successMsg);
+                    return result;
+                } catch (error) {
+                    console.error('❌ Erreur:', error);
+                    alert('❌ Erreur: ' + (error.message || 'Opération échouée'));
+                    return null;
+                }
+            };
+        }
 
+        // Wrappers "safe"
+        const idbPutFactureSafe = withErrorHandling(idbPutFacture);
+        const ouvrirFactureHistoriqueSafe = withErrorHandling(ouvrirFactureHistorique);
         function showTab(tabName, el) {
             // Tabs ambony
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -2616,7 +2632,6 @@
 
 
         }
-
 
         //----  -DASHBOARD -------//
 
@@ -4386,16 +4401,21 @@
         /* Scanner facture (sans OCR) => stockage IndexedDB */
         async function scannerFacture() {
             const input = document.getElementById('facture-scan');
+            if (!input) {
+                alert('❌ Champ fichier introuvable.');
+                return;
+            }
+
             const file = input.files[0];
             if (!file) return;
 
-            // UI elements (miaro raha tsy mbola misy id="scan-title")
-            const previewEl = document.getElementById('scan-preview');
-            const imgEl = document.getElementById('scan-image');
+            // UI elements (tous protégés)
+            const previewEl  = document.getElementById('scan-preview');
+            const imgEl      = document.getElementById('scan-image');
             const progressEl = document.getElementById('scan-progress');
-            const barEl = document.getElementById('scan-progress-bar');
-            const statusEl = document.getElementById('scan-status');
-            const titleEl = document.getElementById('scan-title'); // raha tsy misy dia tsy maninona
+            const barEl      = document.getElementById('scan-progress-bar');
+            const statusEl   = document.getElementById('scan-status');
+            const titleEl    = document.getElementById('scan-title');
 
             // 1) Mamorona fileKey (fallback raha tsy misy crypto.randomUUID)
             const fileKey = (window.crypto && crypto.randomUUID)
@@ -4413,41 +4433,54 @@
 
             // 3) Preview: sary ihany no aseho (PDF tsy aseho amin'ny <img>)
             const isImage = file.type && file.type.startsWith('image/');
-            previewEl.style.display = isImage ? 'block' : 'none';
 
-            if (isImage) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                imgEl.src = e.target.result; // preview fotsiny
-                };
-                reader.readAsDataURL(file);
-            } else {
-                if (imgEl) imgEl.src = '';
+            if (previewEl) {
+                previewEl.style.display = isImage ? 'block' : 'none';
             }
 
-            // 4) Asehoy progress
-            progressEl.style.display = 'block';
-            barEl.style.width = '20%';
-            statusEl.textContent = 'Enregistrement de la facture...';
-            if (titleEl) titleEl.textContent = 'Analyse en cours...';
+            if (isImage && imgEl) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imgEl.src = e.target.result; // preview fotsiny
+                };
+                reader.readAsDataURL(file);
+            } else if (imgEl) {
+                imgEl.src = '';
+            }
+
+            // 4) Asehoy progress (miaro raha undefined ny éléments)
+            if (progressEl) progressEl.style.display = 'block';
+            if (barEl)      barEl.style.width = '20%';
+            if (statusEl)   statusEl.textContent = 'Enregistrement de la facture...';
+            if (titleEl)    titleEl.textContent  = 'Analyse en cours...';
 
             // 5) Tehirizo ao IndexedDB ilay fichier (File/Blob)
             try {
-                await idbPutFacture(fileKey, file);
+                await idbPutFacture(fileKey, file);  // IndexedDB, tsy localStorage
 
-                barEl.style.width = '100%';
-                statusEl.textContent = 'Facture enregistrée (pièce jointe).';
-                if (titleEl) titleEl.textContent = 'Terminé';
-                setTimeout(() => (progressEl.style.display = 'none'), 1200);
+                if (barEl)    barEl.style.width = '100%';
+                if (statusEl) statusEl.textContent = 'Facture enregistrée (pièce jointe).';
+                if (titleEl)  titleEl.textContent  = 'Terminé';
+
+                if (progressEl) {
+                    setTimeout(() => {
+                        progressEl.style.display = 'none';
+                    }, 1200);
+                }
             } catch (err) {
-                console.error(err);
-                barEl.style.width = '0%';
-                statusEl.textContent = 'Erreur: tsy voatahiry ilay facture.';
-                if (titleEl) titleEl.textContent = 'Erreur';
+                console.error('Erreur enregistrement facture:', err);
+
+                if (barEl)    barEl.style.width = '0%';
+                if (statusEl) statusEl.textContent = 'Erreur: tsy voatahiry ilay facture.';
+                if (titleEl)  titleEl.textContent  = 'Erreur';
+
                 // Aza avela hisy "draft" tsy misy fichier voatahiry
                 factureAchatDraft = null;
+
+                alert('❌ Tsy voatahiry ilay facture.\nDétail: ' + (err.message || 'Erreur inconnue'));
             }
         }
+
 
 
 
