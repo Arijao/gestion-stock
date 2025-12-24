@@ -1359,140 +1359,171 @@
         }
 
         /* Responsive pour les onglets/tabs */
+        /* ✅ Tabs responsives, sans débordement */
         @media (max-width: 768px) {
-            .tab {
-                font-size: 12px !important;
-                padding: 8px 10px !important;
-                min-width: auto !important;
-                flex: 1 1 auto;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
             .tab-container {
                 display: flex;
                 flex-wrap: nowrap;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
-                gap: 5px;
+                gap: 4px;
+                padding: 0 8px;
+                max-width: 100%;
+                box-sizing: border-box;
             }
-            
+
             .tab-container::-webkit-scrollbar {
                 height: 3px;
+            }
+
+            .tab {
+                font-size: 11px !important;
+                padding: 6px 8px !important;
+                min-width: auto !important;
+                flex: 0 0 auto;          /* chaque tab prend juste sa largeur */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 140px;        /* limite pour éviter les tabs trop longues */
             }
         }
 
         @media (max-width: 480px) {
             .tab {
                 font-size: 10px !important;
-                padding: 6px 8px !important;
+                padding: 4px 6px !important;
+                max-width: 110px;
             }
         }
 
-        /* ====== RESPONSIVE GLOBAL ====== */
+        /* ✅ RESPONSIVE GLOBAL MOBILE */
         @media (max-width: 480px) {
-        .sidebar {
-            width: 0;
-            overflow: hidden;
-        }
-        .sidebar.open {
-            width: 200px;
-        }
-        .main-wrapper {
-            margin-left: 0;
-            padding: 16px;
-        }
-        .container {
-            border-radius: 16px;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
-        }
-        .header h1 {
-            font-size: 20px;
-        }
-        .tabs {
-            gap: 4px;
-            padding: 0 16px 8px;
-        }
-        .tab {
-            font-size: 11px !important;
-            padding: 6px 8px !important;
-            min-width: auto;
-        }
-        .content {
-            padding: 16px;
-        }
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-        .form-section {
-            padding: 14px;
-            border-radius: 14px;
-        }
-        .btn, .btn-primary, .btn-success, .btn-pdf, .btn-info {
-            padding: 8px 14px;
-            font-size: 12px;
-        }
-        .dash-top h2 {
-            font-size: 22px;
-        }
-        .dash-cards {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .dash-layout {
-            flex-direction: column;
-        }
-        .dash-right {
-            width: 100%;
-            margin-top: 16px;
-        }
-        .dash-chart-wrap {
-            height: 200px;
-        }
-        .dash-mini {
-            grid-template-columns: 1fr;
-        }
-        table {
-            font-size: 11px;
-        }
-        th, td {
-            padding: 6px 8px;
-        }
-        .logo-upload {
-            padding: 12px;
-            border-radius: 12px;
-        }
-        .logo-preview {
-            max-width: 120px;
-            max-height: 60px;
-        }
+            body {
+                overflow-x: hidden;
+            }
+
+            .sidebar {
+                width: 0;
+                overflow: hidden;
+            }
+
+            .sidebar.open {
+                width: 200px;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+                padding: 8px;           /* 16px → 8px pour gagner de la place */
+            }
+
+            .container {
+                border-radius: 12px;
+                box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .tabs {
+                gap: 4px;
+                padding: 0 4px 6px;     /* 0 16px → 0 4px */
+            }
+
+            .content {
+                padding: 10px;          /* 16px → 10px */
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .form-section {
+                padding: 10px;
+                border-radius: 12px;
+            }
+
+            .btn,
+            .btn-primary,
+            .btn-success,
+            .btn-pdf,
+            .btn-info {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .dash-top h2 {
+                font-size: 20px;
+            }
+
+            .dash-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dash-layout {
+                flex-direction: column;
+            }
+
+            .dash-right {
+                width: 100%;
+                margin-top: 12px;
+            }
+
+            .dash-chart-wrap {
+                height: 200px;
+            }
+
+            .dash-mini {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: 4px 6px;
+            }
+
+            .logo-upload {
+                padding: 10px;
+                border-radius: 10px;
+            }
+
+            .logo-preview {
+                max-width: 110px;
+                max-height: 55px;
+            }
         }
 
+
         @media (min-width: 481px) and (max-width: 768px) {
-        .sidebar {
-            width: 60px;
-        }
-        .sidebar.open {
-            width: 200px;
-        }
-        .main-wrapper {
-            margin-left: 60px;
-            padding: 20px;
-        }
-        .dash-cards {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .dash-right {
-            width: 100%;
-            margin-top: 16px;
-        }
-        .tabs {
-            flex-wrap: wrap;
-        }
-        .tab {
-            min-width: 80px;
-        }
+            .sidebar {
+                width: 60px;
+            }
+            .sidebar.open {
+                width: 200px;
+            }
+            .main-wrapper {
+                margin-left: 60px;
+                padding: 16px;
+            }
+            .dash-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .dash-right {
+                width: 100%;
+                margin-top: 16px;
+            }
+            .tabs {
+                flex-wrap: wrap;
+                padding: 0 8px 8px;
+            }
+            .tab {
+                min-width: 70px;
+                flex: 0 0 auto;
+            }
         }
 
         /* PAGINATION */
@@ -1501,7 +1532,7 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 16px;
-            padding: 12px;
+            padding: 8px 10px;
             background: white;
             border-radius: 10px;
             border: 1px solid #e5e7eb;
@@ -1519,8 +1550,8 @@
         }
 
         .pagination-btn {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 8px;
             border: 1px solid #e5e7eb;
             background: white;
@@ -1531,22 +1562,6 @@
             justify-content: center;
             font-size: 12px;
             transition: all 0.2s;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            background: #111827;
-            color: white;
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .pagination-btn.active {
-            background: #111827;
-            color: white;
-            font-weight: 600;
         }
 
         .page-size-selector {
@@ -1561,6 +1576,51 @@
             border-radius: 8px;
             border: 1px solid #e5e7eb;
             font-size: 12px;
+        }
+        /*.pagination-btn:hover:not(:disabled) {
+            background: #111827;
+            color: white;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #111827;
+            color: white;
+            font-weight: 600;
+        }*/
+
+        /* Mobile: pagination en colonne pour éviter le dépassement */
+        @media (max-width: 480px) {
+            .pagination-wrapper {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .pagination-controls {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .pagination-info {
+                font-size: 11px;
+            }
+
+            .page-size-selector {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .page-size-selector select {
+                max-width: 120px;
+            }
         }
 
         /* Style select type calcul */
