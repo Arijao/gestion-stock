@@ -3510,7 +3510,7 @@
             const delaiPaiement = delaiInput && delaiInput.value !== '' 
             ? parseInt(delaiInput.value, 10) 
             : 30;
-            console.log('🔍 Délai final utilisé:', delaiPaiement);
+            
             
             if(!date || !client || !adresse || !numero) {
                 alert('Remplissez tous les champs');
@@ -3533,7 +3533,7 @@
             const totalVente = articlesVente.reduce((s, a) => s + a.total, 0);
             
             const dateLimiteCalculee = calculerDateLimite(date, delaiPaiement);
-            console.log('🔍 Date limite qui va être sauvegardée:', dateLimiteCalculee);
+            
             
             historique.push({
                 type: 'vente',
@@ -3572,7 +3572,6 @@
 
 
         function afficherStock() {
-            console.log('📦 afficherStock - stockPerPage:', stockPerPage, 'stockPage:', stockPage);
             const tbody = document.getElementById('stock-tbody');
             tbody.innerHTML = '';
             let nbProduits = 0;
@@ -3617,8 +3616,6 @@
             const endIdx = startIdx + stockPerPage;
             const pageItems = filteredItems.slice(startIdx, endIdx);
 
-            console.log('📦 Items à afficher:', pageItems.length, 'sur', totalItems);
-            console.log('📦 startIdx:', startIdx, 'endIdx:', endIdx);
             
             // Display paginated items
             pageItems.forEach(item => {
@@ -3652,24 +3649,63 @@
             
             // Create pagination
             createPagination('stock-pagination', stockPage, totalItems, stockPerPage, goToStockPage, changeStockPerPage);
-            setTimeout(() => {
-                const sel = document.querySelector('#stock-pagination select');
+
+            // ✅ OPTIMISÉ - Tsy misy log, direct attach
+            const container = document.getElementById('stock-pagination');
+            if(container) {
+                const totalPages = Math.max(1, Math.ceil(totalItems / stockPerPage));
+                
+                // Clear old listeners (avoid accumulation)
+                const oldContainer = container.cloneNode(true);
+                container.parentNode.replaceChild(oldContainer, container);
+                
+                // Get new container after replacement
+                const freshContainer = document.getElementById('stock-pagination');
+                
+                // Fix buttons
+                freshContainer.querySelectorAll('.pagination-btn').forEach((btn) => {
+                    const hasLeftDouble = btn.querySelector('.fa-angles-left');
+                    const hasLeft = btn.querySelector('.fa-chevron-left');
+                    const hasRight = btn.querySelector('.fa-chevron-right');
+                    const hasRightDouble = btn.querySelector('.fa-angles-right');
+                    
+                    if(hasLeftDouble) {
+                        btn.onclick = () => goToStockPage(1);
+                    } else if(hasLeft) {
+                        btn.onclick = () => goToStockPage(Math.max(1, stockPage - 1));
+                    } else if(hasRight) {
+                        btn.onclick = () => goToStockPage(Math.min(totalPages, stockPage + 1));
+                    } else if(hasRightDouble) {
+                        btn.onclick = () => goToStockPage(totalPages);
+                    } else {
+                        const pageNum = parseInt(btn.textContent);
+                        if(!isNaN(pageNum)) {
+                            btn.onclick = () => goToStockPage(pageNum);
+                        }
+                    }
+                });
+                
+                // Fix dropdown
+                const sel = freshContainer.querySelector('select');
                 if(sel) sel.onchange = (e) => changeStockPerPage(e.target.value);
-            }, 50);
+            }
+
+
         }
 
 
         function goToStockPage(page) {
+            
             stockPage = page;
+            
             afficherStock();
         }
 
         function changeStockPerPage(perPage) {
-            console.log('🔄 changeStockPerPage APPELÉ! perPage =', perPage);
-            console.log('📊 Avant: stockPerPage =', stockPerPage);
+            
             stockPerPage = parseInt(perPage, 10);
             stockPage = 1;
-            console.log('📊 Après: stockPerPage =', stockPerPage);
+            
             afficherStock();
         }
 
@@ -5708,14 +5744,11 @@
         // ========== GESTION PAIEMENT - Helper Functions ==========
 
         function calculerDateLimite(dateVente, delaiJours = 30) {
-            console.log("📅 calculerDateLimite APPELÉ:", {dateVente, delaiJours});
             
             // ✅ VAOVAO: Force local timezone
             const d = new Date(dateVente + "T00:00:00");
-            console.log("📅 Date de vente:", d);
             
             d.setDate(d.getDate() + delaiJours);
-            console.log("📅 Date + délai:", d);
             
             // ✅ VAOVAO: Extract date manually (tsy toISOString)
             const year = d.getFullYear();
@@ -5723,7 +5756,6 @@
             const day = String(d.getDate()).padStart(2, '0');
             const result = `${year}-${month}-${day}`;
             
-            console.log("📅 Date limite finale:", result);
             return result;
         }
 
@@ -6870,15 +6902,17 @@
             
             // Pages numéros (max 5 visibles)
             let startPage = Math.max(1, currentPage - 2);
-            let endPage   = Math.min(totalPages, startPage + 4);
+            let endPage = Math.min(totalPages, startPage + 4);
             if (endPage - startPage < 4) {
                 startPage = Math.max(1, endPage - 4);
             }
-            
+
             for (let i = startPage; i <= endPage; i++) {
+                const funcName = typeof onPageChange === 'string' ? onPageChange : 'onPageChange';
                 html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
-                            onclick="${onPageChange}(${i})">${i}</button>`;
+                            onclick="${funcName}(${i})">${i}</button>`;
             }
+
             
             html += `
                         <button class="pagination-btn" onclick="${onPageChange}(${currentPage + 1})" ${currentPage === totalPages || !hasItems ? 'disabled' : ''}>
@@ -6979,7 +7013,6 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
-                        console.log('✅ Service Worker enregistré:', registration);
                         
                         // Update automatique
                         registration.addEventListener('updatefound', () => {
