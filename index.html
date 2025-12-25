@@ -1830,6 +1830,7 @@
             align-items: center;
             gap: 8px;
             font-size: 12px;
+            color: #6b7280;
         }
 
         .page-size-selector select {
@@ -1838,7 +1839,7 @@
             border: 1px solid #e5e7eb;
             font-size: 12px;
         }
-        /*.pagination-btn:hover:not(:disabled) {
+        .pagination-btn:hover:not(:disabled) {
             background: #111827;
             color: white;
         }
@@ -1852,7 +1853,7 @@
             background: #111827;
             color: white;
             font-weight: 600;
-        }*/
+        }
 
         /* Mobile: pagination en colonne pour éviter le dépassement */
         @media (max-width: 480px) {
@@ -2161,11 +2162,6 @@
                             <div class="dash-mini-title">New clients</div>
                             <div class="dash-mini-kpi" id="kpi-clients-30d">0</div>
                         </div>
-
-                        <div class="dash-mini-card">
-                            <div class="dash-mini-title">Invoices overdue</div>
-                            <div class="dash-mini-kpi" id="kpi-overdue" style="font-size:34px; line-height:1.2;">0</div>
-                        </div>
                         </div>
 
                     </div>
@@ -2449,6 +2445,14 @@
                                 <label>📍 Adresse</label>
                                 <input type="text" id="vente-adresse" placeholder="Adresse">
                             </div>
+                            <div class="form-group">
+                                <label>Délai de paiement (jours)</label>
+                                <input type="number" id="vente-delai" min="0" max="365" value="30" placeholder="30">
+                                <small style="display:block; margin-top:4px; color:#6b7280; font-size:11px;">
+                                    Nombre de jours pour payer la facture
+                                </small>
+                            </div>
+
                             <div class="form-group">
                                 <label>📄 Numéro</label>
                                 <input type="text" id="vente-numero" readonly style="background: #f0f0f0;">
@@ -3500,6 +3504,13 @@
             const client = document.getElementById('vente-client').value;
             const adresse = document.getElementById('vente-adresse').value;
             const numero = document.getElementById('vente-numero').value;
+            // ✅ DEBUG - Vérifier la valeur
+            
+            const delaiInput = document.getElementById('vente-delai');
+            const delaiPaiement = delaiInput && delaiInput.value !== '' 
+            ? parseInt(delaiInput.value, 10) 
+            : 30;
+            console.log('🔍 Délai final utilisé:', delaiPaiement);
             
             if(!date || !client || !adresse || !numero) {
                 alert('Remplissez tous les champs');
@@ -3521,6 +3532,9 @@
             // ✅ VAOVAO - Calcul total
             const totalVente = articlesVente.reduce((s, a) => s + a.total, 0);
             
+            const dateLimiteCalculee = calculerDateLimite(date, delaiPaiement);
+            console.log('🔍 Date limite qui va être sauvegardée:', dateLimiteCalculee);
+            
             historique.push({
                 type: 'vente',
                 date: date,
@@ -3530,9 +3544,9 @@
                 articles: [...articlesVente],
                 total: totalVente,
                 
-                // ✅ GESTION PAIEMENT - Champs vaovao:
+                // ✅ GESTION PAIEMENT - Avec délai dynamique:
                 statutPaiement: 'impayé',
-                dateLimite: calculerDateLimite(date, 2), // 30 jours délai
+                dateLimite: dateLimiteCalculee,
                 montantPaye: 0,
                 datePayement: null,
                 moyenPaiement: null
@@ -3547,6 +3561,7 @@
             afficherArticlesVente();
             document.getElementById('vente-client').value = '';
             document.getElementById('vente-adresse').value = '';
+            document.getElementById('vente-delai').value = '30'; // ✅ Reset à 30
             genererNumeroVente();
             afficherStock();
             updateDashboard();
@@ -3555,7 +3570,9 @@
         }
 
 
+
         function afficherStock() {
+            console.log('📦 afficherStock - stockPerPage:', stockPerPage, 'stockPage:', stockPage);
             const tbody = document.getElementById('stock-tbody');
             tbody.innerHTML = '';
             let nbProduits = 0;
@@ -3599,6 +3616,9 @@
             const startIdx = (stockPage - 1) * stockPerPage;
             const endIdx = startIdx + stockPerPage;
             const pageItems = filteredItems.slice(startIdx, endIdx);
+
+            console.log('📦 Items à afficher:', pageItems.length, 'sur', totalItems);
+            console.log('📦 startIdx:', startIdx, 'endIdx:', endIdx);
             
             // Display paginated items
             pageItems.forEach(item => {
@@ -3632,6 +3652,10 @@
             
             // Create pagination
             createPagination('stock-pagination', stockPage, totalItems, stockPerPage, goToStockPage, changeStockPerPage);
+            setTimeout(() => {
+                const sel = document.querySelector('#stock-pagination select');
+                if(sel) sel.onchange = (e) => changeStockPerPage(e.target.value);
+            }, 50);
         }
 
 
@@ -3641,8 +3665,11 @@
         }
 
         function changeStockPerPage(perPage) {
+            console.log('🔄 changeStockPerPage APPELÉ! perPage =', perPage);
+            console.log('📊 Avant: stockPerPage =', stockPerPage);
             stockPerPage = parseInt(perPage, 10);
             stockPage = 1;
+            console.log('📊 Après: stockPerPage =', stockPerPage);
             afficherStock();
         }
 
@@ -4303,167 +4330,286 @@
             }
         }
 
-        // ✅ 1. FONCTION HELPERS - AVANT updateDashboard()
-        function getActionsUrgentes() {
+        // ✅ AFFICHER CARD "PAIEMENTS URGENTS"
+        // ========================================
+        // ✅ PAIEMENTS URGENTS - GLOBAL SCOPE
+        // ========================================
+
+        function afficherCardPaiementsUrgents() {
+            const histData = typeof historique !== 'undefined' && Array.isArray(historique) ? historique : JSON.parse(localStorage.getItem('historique-data') || '[]');
             const today = new Date().toISOString().slice(0, 10);
-            const actions = [];
             
-            // 1. Factures échues AUJOURD'HUI
-            const facturesAujourdhui = historique.filter(h => 
+            const facturesAujourdhui = histData.filter(h => 
                 h.type === 'vente' && 
+                h.statutPaiement && 
                 h.statutPaiement !== 'payé' && 
+                h.statutPaiement !== 'pay\u00E9' && 
                 h.dateLimite === today
             );
             
-            if(facturesAujourdhui.length > 0) {
-                const montant = facturesAujourdhui.reduce((sum, h) => sum + (h.total - (h.montantPaye || 0)), 0);
-                actions.push({
-                    icon: '💰',
-                    type: 'error',
-                    titre: `${facturesAujourdhui.length} paiement${facturesAujourdhui.length > 1 ? 's' : ''} attendu${facturesAujourdhui.length > 1 ? 's' : ''} AUJOURD'HUI`,
-                    montant: montant.toLocaleString() + ' Ar',
-                    action: () => { sidebarShowTab('historique'); }
-                });
-            }
-            
-            // 2. Stock en RUPTURE (0 ou < 3)
-            const stockRupture = Object.keys(stock).filter(p => {
-                const qte = getStockQty(p);
-                return qte < 3;
-            });
-            
-            if(stockRupture.length > 0) {
-                actions.push({
-                    icon: '📦',
-                    type: 'error',
-                    titre: `${stockRupture.length} produit${stockRupture.length > 1 ? 's' : ''} en rupture`,
-                    details: stockRupture.slice(0, 3).join(', ') + (stockRupture.length > 3 ? '...' : ''),
-                    action: () => { sidebarShowTab('stock'); }
-                });
-            }
-            
-            // 3. Stock FAIBLE (3-10)
-            const stockFaible = Object.keys(stock).filter(p => {
-                const qte = getStockQty(p);
-                return qte >= 3 && qte < 10;
-            });
-            
-            if(stockFaible.length > 0) {
-                actions.push({
-                    icon: '⚠️',
-                    type: 'warning',
-                    titre: `${stockFaible.length} produit${stockFaible.length > 1 ? 's' : ''} stock faible`,
-                    details: stockFaible.slice(0, 2).join(', '),
-                    action: () => { sidebarShowTab('stock'); }
-                });
-            }
-            
-            // 4. Demandes de prix EN ATTENTE
-            const demandesEnAttente = demandesPrix.filter(d => d.statut === 'enattente');
-            if(demandesEnAttente.length > 0) {
-                actions.push({
-                    icon: '📋',
-                    type: 'warning',
-                    titre: `${demandesEnAttente.length} demande${demandesEnAttente.length > 1 ? 's' : ''} de prix en attente`,
-                    details: 'Comparez et validez les offres',
-                    action: () => { sidebarShowTab('demande-prix'); }
-                });
-            }
-            
-            // 5. Tâches TODO non terminées
-            const tachesNonFaites = todos.filter(t => !t.done);
-            if(tachesNonFaites.length > 0) {
-                actions.push({
-                    icon: '✅',
-                    type: 'info',
-                    titre: `${tachesNonFaites.length} tâche${tachesNonFaites.length > 1 ? 's' : ''} à terminer`,
-                    details: tachesNonFaites[0].texte,
-                    action: null
-                });
-            }
-            
-            return actions;
-        }
+            const facturesRetard = histData.filter(h => 
+                h.type === 'vente' && 
+                h.statutPaiement && 
+                h.statutPaiement !== 'payé' && 
+                h.statutPaiement !== 'pay\u00E9' && 
+                h.dateLimite && 
+                h.dateLimite < today
+            );
 
-        // ✅ 2. FONCTION AFFICHAGE - AVANT updateDashboard()
-        function afficherActionsUrgentes() {
-            const actions = getActionsUrgentes();
-            
-            // Créer/trouver le container
-            let container = document.getElementById('actions-urgentes-container');
+            let container = document.getElementById('card-paiements-urgents');
             if(!container) {
                 container = document.createElement('div');
-                container.id = 'actions-urgentes-container';
-                container.style.cssText = 'margin-bottom: 16px;';
-                
-                // Insérer AVANT les dash-cards
-                const dashMain = document.querySelector('.dash-main');
-                const dashCards = dashMain.querySelector('.dash-cards');
-                if(dashCards) {
-                    dashMain.insertBefore(container, dashCards);
+                container.id = 'card-paiements-urgents';
+                container.className = 'dash-right-card';
+                const dashRight = document.querySelector('.dash-right');
+                if(!dashRight) {
+                    console.error('.dash-right INTROUVABLE!');
+                    return;
                 }
+                dashRight.insertBefore(container, dashRight.firstChild);
             }
+
+            const totalEnRetard = facturesRetard.length;
+            const totalAujourdhui = facturesAujourdhui.length;
+            const montantTotal = [...facturesRetard, ...facturesAujourdhui]
+                .reduce((sum, h) => sum + (h.total - (h.montantPaye || 0)), 0);
+
+            if(totalEnRetard === 0 && totalAujourdhui === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
             
-            if(actions.length === 0) {
-                container.innerHTML = `
-                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
-                                border: 2px solid #16a34a; 
-                                border-radius: 18px; 
-                                padding: 20px; 
-                                text-align: center;">
-                        <div style="font-size: 32px; margin-bottom: 10px;">✅</div>
-                        <div style="font-size: 16px; font-weight: 700; color: #166534;">
-                            Aucune action urgente!
+            container.innerHTML = `
+                <div class="dash-right-title" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-exclamation-circle" style="color: #6b7280; font-size: 16px;"></i>
+                    Paiements urgents
+                </div>
+                <div class="dash-right-sub" style="margin-top: 4px; font-size: 12px; color: #64748b;">
+                    ${totalEnRetard > 0 ? `${totalEnRetard} en retard` : ''}${totalEnRetard > 0 && totalAujourdhui > 0 ? ' • ' : ''}${totalAujourdhui > 0 ? `${totalAujourdhui} aujourd'hui` : ''}
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #fee2e2; border-radius: 10px; border-left: 3px solid #dc2626;">
+                    <div style="font-size: 10px; color: #991b1b; font-weight: 600; margin-bottom: 3px;">MONTANT TOTAL</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #dc2626; line-height: 1;">${montantTotal.toLocaleString()} Ar</div>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 8px; font-size: 12px;" 
+                        onclick="ouvrirModalPaiementsUrgents()">
+                    <i class="fa-solid fa-eye"></i> Voir détails
+                </button>
+            `;
+        }
+
+        // ✅ MODAL PAIEMENTS URGENTS - TSY OVAINA
+        function ouvrirModalPaiementsUrgents() {
+            const histData = typeof historique !== 'undefined' && Array.isArray(historique) ? historique : JSON.parse(localStorage.getItem('historique-data') || '[]');
+            const today = new Date().toISOString().slice(0, 10);
+
+            const facturesAujourdhui = histData.filter(h => 
+                h.type === 'vente' && 
+                h.statutPaiement && 
+                h.statutPaiement !== 'payé' && 
+                h.statutPaiement !== 'pay\u00E9' && 
+                h.dateLimite === today
+            );
+
+            const facturesRetard = histData.filter(h => 
+                h.type === 'vente' && 
+                h.statutPaiement && 
+                h.statutPaiement !== 'payé' && 
+                h.statutPaiement !== 'pay\u00E9' && 
+                h.dateLimite && 
+                h.dateLimite < today
+            );
+
+            const montantRetard = facturesRetard.reduce((sum, h) => sum + (h.total - (h.montantPaye || 0)), 0);
+            const montantAujourdhui = facturesAujourdhui.reduce((sum, h) => sum + (h.total - (h.montantPaye || 0)), 0);
+
+            // Créer liste HTML
+            const listeRetard = facturesRetard.map((h, idx) => {
+                const reste = h.total - (h.montantPaye || 0);
+                const originalIdx = historique.findIndex(item => item === h);
+                return `
+                    <div style="padding: 10px; background: #fef2f2; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #dc2626; cursor: pointer;"
+                        onclick="fermerModalPaiementsUrgents(); sidebarShowTab('historique'); setTimeout(() => { const row = document.querySelectorAll('#historique-tbody tr')[${originalIdx}]; if(row) { row.style.background='#fef3c7'; row.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(() => row.style.background='', 2000); } }, 100);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: #991b1b; font-size: 13px;">${h.numero}</span>
+                            <span style="color: #dc2626; font-weight: 900; font-size: 14px;">${reste.toLocaleString()} Ar</span>
                         </div>
-                        <div style="font-size: 13px; color: #15803d; margin-top: 5px;">
-                            Tout est sous contrôle aujourd'hui.
+                        <div style="font-size: 11px; color: #64748b;">
+                            <strong>${h.tiers}</strong> • Échéance: ${h.dateLimite}
                         </div>
                     </div>
                 `;
+            }).join('');
+
+            const listeAujourdhui = facturesAujourdhui.map((h, idx) => {
+                const reste = h.total - (h.montantPaye || 0);
+                const originalIdx = historique.findIndex(item => item === h);
+                return `
+                    <div style="padding: 10px; background: #fef3c7; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #f59e0b; cursor: pointer;"
+                        onclick="fermerModalPaiementsUrgents(); sidebarShowTab('historique'); setTimeout(() => { const row = document.querySelectorAll('#historique-tbody tr')[${originalIdx}]; if(row) { row.style.background='#fef3c7'; row.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(() => row.style.background='', 2000); } }, 100);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: #92400e; font-size: 13px;">${h.numero}</span>
+                            <span style="color: #b45309; font-weight: 900; font-size: 14px;">${reste.toLocaleString()} Ar</span>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">
+                            <strong>${h.tiers}</strong> • <strong style="color: #f59e0b;">Échéance AUJOURD'HUI</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // HTML Modal
+            const modalHTML = `
+                <div style="padding: 24px; max-width: 600px; width: 90vw; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 20px;">
+                        💰 Paiements urgents - Détails
+                    </h3>
+                    
+                    <!-- Breakdown montant -->
+                    <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                        ${montantRetard > 0 ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: #dc2626;">⚠️ En retard (${facturesRetard.length})</span>
+                                <span style="color: #dc2626; font-weight: 700;">${montantRetard.toLocaleString()} Ar</span>
+                            </div>
+                        ` : ''}
+                        ${montantAujourdhui > 0 ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: #f59e0b;">⏰ Aujourd'hui (${facturesAujourdhui.length})</span>
+                                <span style="color: #f59e0b; font-weight: 700;">${montantAujourdhui.toLocaleString()} Ar</span>
+                            </div>
+                        ` : ''}
+                        <div style="border-top: 2px solid #d1d5db; margin: 8px 0; padding-top: 8px; display: flex; justify-content: space-between;">
+                            <span style="font-weight: 700; color: #111827;">TOTAL</span>
+                            <span style="font-weight: 900; color: #dc2626; font-size: 15px;">${(montantRetard + montantAujourdhui).toLocaleString()} Ar</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Liste factures en retard -->
+                    ${facturesRetard.length > 0 ? `
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #991b1b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                ⚠️ Factures en retard (${facturesRetard.length})
+                            </div>
+                            ${listeRetard}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Liste factures aujourd'hui -->
+                    ${facturesAujourdhui.length > 0 ? `
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #92400e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                ⏰ Échéance aujourd'hui (${facturesAujourdhui.length})
+                            </div>
+                            ${listeAujourdhui}
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-top: 16px; padding: 10px; background: #e0f2fe; border-radius: 6px; border-left: 3px solid #0284c7; font-size: 11px; color: #075985;">
+                        💡 <strong>Astuce:</strong> Cliquez sur une facture pour la voir dans l'historique
+                    </div>
+                    
+                    <button onclick="fermerModalPaiementsUrgents()" 
+                            style="width: 100%; margin-top: 16px; background: #111827; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                        Fermer
+                    </button>
+                </div>
+            `;
+
+            // Créer modal
+            const modal = document.createElement('div');
+            modal.id = 'modal-paiements-urgents';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = 'background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);';
+            modalContent.innerHTML = modalHTML;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // Fermer si click dehors
+            modal.addEventListener('click', (e) => {
+                if(e.target === modal) fermerModalPaiementsUrgents();
+            });
+        }
+
+        function fermerModalPaiementsUrgents() {
+            const modal = document.getElementById('modal-paiements-urgents');
+            if(modal) modal.remove();
+        }
+
+
+        // ✅ AFFICHER CARD "DEMANDES DE PRIX" - VERSION CORRIGÉE
+        function afficherCardDemandesPrix() {
+            // ✅ CHARGER LES DONNÉES
+            const dpData = (typeof demandesPrix !== 'undefined' && Array.isArray(demandesPrix))
+                ? demandesPrix
+                : JSON.parse(localStorage.getItem('demandes-prix-data') || '[]');
+            
+            // ✅ FILTRE CORRIGÉ - avec underscore!
+            const demandesEnAttente = dpData.filter(d => d.statut === 'en_attente');
+            
+            let container = document.getElementById('card-demandes-prix');
+            if(!container) {
+                container = document.createElement('div');
+                container.id = 'card-demandes-prix';
+                container.className = 'dash-right-card';
+                
+                const dashRight = document.querySelector('.dash-right');
+                if(!dashRight) return;
+                
+                // Insérer APRÈS Stock status
+                const stockCard = dashRight.querySelector('.dash-right-dark');
+                if(stockCard && stockCard.nextSibling) {
+                    dashRight.insertBefore(container, stockCard.nextSibling);
+                } else {
+                    dashRight.appendChild(container);
+                }
+            }
+            
+            if(demandesEnAttente.length === 0) {
+                container.style.display = 'none';
                 return;
             }
             
+            container.style.display = 'block';
             container.innerHTML = `
-                <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
-                            border: 2px solid #dc2626; 
-                            border-radius: 18px; 
-                            padding: 18px; 
-                            box-shadow: 0 10px 24px rgba(220, 38, 38, 0.15);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-                        <div style="font-size: 24px;">🔥</div>
-                        <div style="font-size: 16px; font-weight: 800; color: #991b1b;">
-                            ACTIONS URGENTES - AUJOURD'HUI
-                        </div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        ${actions.map(a => `
-                            <div ${a.action ? `onclick="(${a.action.toString()})()"` : ''} 
-                                style="background: white; 
-                                        padding: 12px 14px; 
-                                        border-radius: 12px; 
-                                        display: flex; 
-                                        align-items: center; 
-                                        gap: 12px;
-                                        cursor: ${a.action ? 'pointer' : 'default'};
-                                        transition: all 0.2s;
-                                        border-left: 4px solid ${a.type === 'error' ? '#dc2626' : a.type === 'warning' ? '#f59e0b' : '#2563eb'};"
-                                onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
-                                onmouseout="this.style.transform=''; this.style.boxShadow='';">
-                                <div style="font-size: 20px;">${a.icon}</div>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 700; color: #111827; font-size: 13px;">
-                                        ${a.titre}
-                                    </div>
-                                    ${a.montant ? `<div style="font-weight: 800; color: #dc2626; font-size: 14px; margin-top: 2px;">${a.montant}</div>` : ''}
-                                    ${a.details ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">${a.details}</div>` : ''}
-                                </div>
-                                ${a.action ? '<i class="fa-solid fa-chevron-right" style="color: #9ca3af; font-size: 12px;"></i>' : ''}
-                            </div>
-                        `).join('')}
-                    </div>
+                <div class="dash-right-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">📋</span>
+                    Demandes de prix
                 </div>
+                <div class="dash-right-sub" style="margin-top: 6px; font-size: 12px; color: #64748b;">
+                    ${demandesEnAttente.length} en attente de validation
+                </div>
+                
+                <div style="margin-top: 12px; max-height: 150px; overflow-y: auto;">
+                    ${demandesEnAttente.slice(0, 5).map(d => {
+                        const nbOffres = d.fournisseurs ? d.fournisseurs.length : 0;
+                        return `
+                        <div style="padding: 8px 10px; background: #f9fafb; border-radius: 8px; margin-bottom: 6px; border-left: 3px solid #f59e0b;">
+                            <div style="font-size: 11px; font-weight: 700; color: #111827;">
+                                ${d.produit}
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+                                ${d.quantite} ${d.unite} • ${nbOffres} offre${nbOffres > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 12px;" onclick="sidebarShowTab('demande-prix', document.querySelector('.sidebar-link[onclick*=\\'demande-prix\\']'))">
+                    <i class="fa-solid fa-scale-balanced"></i> Comparer offres
+                </button>
             `;
         }
+
+
+
+
         function updateDashboard() {
             // Maka data (azo antoka na dia tsy mbola loaded aza ny globals)
             const stockData = (typeof stock !== 'undefined' && stock)
@@ -4485,7 +4631,11 @@
                 const d = new Date(String(dateStr) + 'T00:00:00');
                 return Math.floor((today - d) / (1000 * 60 * 60 * 24));
             };
-            afficherActionsUrgentes();
+            // ✅ AFFICHER LES CARDS URGENTES (colonne droite)
+            afficherCardPaiementsUrgents();
+            
+            afficherCardDemandesPrix();
+
 
             // 1) GREETING + AVATAR
             const name = String(cfg.responsable || cfg.nom || '').trim();
@@ -4545,28 +4695,6 @@
                 );
                 const uniqueClients = new Set(recentVentes.map(v => v.tiers || v.client).filter(Boolean));
                 clients30El.textContent = String(uniqueClients.size);
-            }
-
-            // 7) INVOICES OVERDUE (factures tara)
-            const overdueEl = document.getElementById('kpi-overdue');
-            if(overdueEl) {
-                const count = calculerInvoicesOverdue();
-                const montant = getMontantOverdue();
-                
-                // Aseho count na count + montant
-                if(montant > 0) {
-                    overdueEl.textContent = `${count} (${montant.toLocaleString()} Ar)`;
-                    overdueEl.style.fontSize = '11px'; // Kely kokoa raha lava
-                } else {
-                    overdueEl.textContent = String(count);
-                }
-                
-                // Ovana loko raha misy overdue
-                if(count > 0) {
-                    overdueEl.style.color = '#dc2626'; // Rouge
-                } else {
-                    overdueEl.style.color = '#0f172a'; // Normal
-                }
             }
 
             // 8) STOCK STATUS + PROGRESS BAR
@@ -5580,30 +5708,44 @@
         // ========== GESTION PAIEMENT - Helper Functions ==========
 
         function calculerDateLimite(dateVente, delaiJours = 30) {
-            const d = new Date(dateVente + 'T00:00:00');
+            console.log("📅 calculerDateLimite APPELÉ:", {dateVente, delaiJours});
+            
+            // ✅ VAOVAO: Force local timezone
+            const d = new Date(dateVente + "T00:00:00");
+            console.log("📅 Date de vente:", d);
+            
             d.setDate(d.getDate() + delaiJours);
-            return d.toISOString().split('T')[0];
+            console.log("📅 Date + délai:", d);
+            
+            // ✅ VAOVAO: Extract date manually (tsy toISOString)
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const result = `${year}-${month}-${day}`;
+            
+            console.log("📅 Date limite finale:", result);
+            return result;
         }
 
         function calculerInvoicesOverdue() {
-            const today = new Date().toISOString().split('T')[0];
-            
+            const today = new Date().toISOString().slice(0, 10);
             return historique.filter(h => {
-                // Raha tsy vente na tsy misy statut paiement → skip
+                // Raha tsy vente na tsy misy statut paiement, skip
                 if(h.type !== 'vente') return false;
                 
-                // Raha ancien vente tsy manana statutPaiement → considére payé
+                // Raha ancien vente tsy manana statutPaiement, considéré payé
                 if(!h.statutPaiement) return false;
                 
-                // Raha efa payé → skip
-                if(h.statutPaiement === 'payé') return false;
+                // Raha efa payé, skip (accepte 'payé' ET 'pay')
+                if(h.statutPaiement === 'payé' || h.statutPaiement === 'pay\u00E9') return false;
                 
-                // Raha tsy lasa ny date limite → skip
-                if(!h.dateLimite || h.dateLimite >= today) return false;
+                // Raha tsy lasa ny date limite, skip
+                if(!h.dateLimite || h.dateLimite > today) return false;
                 
                 return true;
             }).length;
         }
+
 
         // ========== MODULE DEMANDE PRIX ==========
 
