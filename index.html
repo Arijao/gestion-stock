@@ -2862,23 +2862,71 @@
 
 
         // Window onload
-        window.onload = function() {
-            chargerDonnees();
+        window.onload = async function() {
+            // ✅ Await chargerDonnees satria async
+            await chargerDonnees();
+            
             updateDashboard();
             drawRevenueChart();
             updateNotificationBadge();
+            
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('achat-date').value = today;
             document.getElementById('vente-date').value = today;
             genererNumeroVente();
             masquerDatePicker();
-
         };
+
 
         function openDb() {
             return new Promise((resolve, reject) => {
-                const req = indexedDB.open('gestion-av-db', 1);
-                req.onupgradeneeded = () => req.result.createObjectStore('factures');
+                const req = indexedDB.open('gestion-av-db', 2); // ✅ Version 2!
+                
+                req.onupgradeneeded = (e) => {
+                    const db = req.result;
+                    
+                    // Store taloha (factures PDF)
+                    if(!db.objectStoreNames.contains('factures')) {
+                        db.createObjectStore('factures');
+                    }
+                    
+                    // ✅ VAOVAO - Stores pour données principales
+                    if(!db.objectStoreNames.contains('stock')) {
+                        db.createObjectStore('stock');
+                    }
+                    if(!db.objectStoreNames.contains('historique')) {
+                        db.createObjectStore('historique');
+                    }
+                    if(!db.objectStoreNames.contains('config')) {
+                        db.createObjectStore('config');
+                    }
+                    if(!db.objectStoreNames.contains('demandesPrix')) {
+                        db.createObjectStore('demandesPrix');
+                    }
+                };
+                
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // ✅ Save any data to IndexedDB
+        async function idbSave(storeName, key, value) {
+            const db = await openDb();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).put(value, key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        // ✅ Load any data from IndexedDB
+        async function idbLoad(storeName, key) {
+            const db = await openDb();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const req = tx.objectStore(storeName).get(key);
                 req.onsuccess = () => resolve(req.result);
                 req.onerror = () => reject(req.error);
             });
@@ -4266,103 +4314,171 @@
         }
 
 
-        function sauvegarderDonnees() {
+        async function sauvegarderDonnees() {
             try {
-                // migration: esorina dataUrl taloha
-                historique = nettoyerHistoriquePieces(historique);
-
-                localStorage.setItem('stock-data', JSON.stringify(stock));
-                localStorage.setItem('historique-data', JSON.stringify(historique));
-                localStorage.setItem('config-data', JSON.stringify(config));
-                localStorage.setItem('demandes-prix-data', JSON.stringify(demandesPrix));
-            } catch (e) {
-                // Quota exceeded / private mode / storage blocked
-                if (e && (e.name === 'QuotaExceededError' || e.name === 'QUOTA_EXCEEDED_ERR' || e.code === 22)) {
-                    alert("Feno ny storage: esory/ahena ny historique na aza mitahiry sary base64 ao localStorage.");
-                    return;
-                }
-                throw e;
-                }
+                // ✅ Save to IndexedDB instead of LocalStorage
+                await idbSave('stock', 'data', stock);
+                await idbSave('historique', 'data', historique);
+                await idbSave('config', 'data', config);
+                await idbSave('demandesPrix', 'data', demandesPrix);
+                
+                console.log('✅ Données sauvegardées dans IndexedDB');
+            } catch(e) {
+                console.error('❌ Erreur sauvegarde:', e);
             }
+        }
 
 
-        function chargerDonnees() {
+
+        async function chargerDonnees() {
+            try {
+                // ✅ Load from IndexedDB
+                const s = await idbLoad('stock', 'data');
+                const h = await idbLoad('historique', 'data');
+                const c = await idbLoad('config', 'data');
+                const dpData = await idbLoad('demandesPrix', 'data');
+
+                stock = s || {};
+                historique = h || [];
+                config = c || {};
+                demandesPrix = dpData || [];
+
+                // ✅ MIGRATION - Si vide, essayer LocalStorage (backward compatibility)
+                if(Object.keys(stock).length === 0) {
+                    const lsStock = localStorage.getItem('stock-data');
+                    const lsHisto = localStorage.getItem('historique-data');
+                    const lsConfig = localStorage.getItem('config-data');
+                    const lsDP = localStorage.getItem('demandes-prix-data');
+                    
+                    if(lsStock || lsHisto || lsConfig || lsDP) {
+                        console.log('🔄 Migration LocalStorage → IndexedDB...');
+                        
+                        stock = lsStock ? JSON.parse(lsStock) : {};
+                        historique = lsHisto ? JSON.parse(lsHisto) : [];
+                        config = lsConfig ? JSON.parse(lsConfig) : {};
+                        demandesPrix = lsDP ? JSON.parse(lsDP) : [];
+                        
+                        // Save to IndexedDB
+                        await idbSave('stock', 'data', stock);
+                        await idbSave('historique', 'data', historique);
+                        await idbSave('config', 'data', config);
+                        await idbSave('demandesPrix', 'data', demandesPrix);
+                        
+                        // Clear LocalStorage
+                        localStorage.removeItem('stock-data');
+                        localStorage.removeItem('historique-data');
+                        localStorage.removeItem('config-data');
+                        localStorage.removeItem('demandes-prix-data');
+                        
+                        console.log('✅ Migration réussie!');
+                    }
+                }
+
+                // --- NORMALISATION STOCK (lots) ---
+                Object.keys(stock).forEach(p => {
+                    const item = stock[p] || {};
+                    stock[p] = item;
+
+                    // 1) Raha ancien format: { quantite, prixMoyen } -> avadika ho lots
+                    if(!Array.isArray(item.lots)) item.lots = [];
+                    if(item.lots.length === 0 && (item.quantite != null || item.prixMoyen != null)) {
+                        const q = Number(item.quantite || 0);
+                        const pr = Number(item.prixMoyen || 0);
+                        if(q > 0) item.lots.push({ qte: q, prix: pr, date: item.date || new Date().toISOString().slice(0,10) });
+                    }
+
+                    // 2) Raha lots efa misy fa clé tsy mitovy: quantite/prixMoyen -> qte/prix
+                    item.lots = item.lots.map(l => ({
+                        ...l,
+                        qte: Number(l.qte ?? l.quantite ?? 0),
+                        prix: Number(l.prix ?? l.prixAchat ?? l.prixMoyen ?? 0)
+                    })).filter(l => Number(l.qte) > 0);
+
+                    // 3) Unit default
+                    if(!item.unite) item.unite = 'Pièce';
+                });
+
+                // --- CONFIG UI ---
+                document.getElementById('config-nom').value = config.nom || '';
+                document.getElementById('config-activite').value = config.activite || '';
+                document.getElementById('config-adresse').value = config.adresse || '';
+                document.getElementById('config-nif').value = config.nif || '';
+                document.getElementById('config-stat').value = config.stat || '';
+                document.getElementById('config-rc').value = config.rc || '';
+                document.getElementById('config-responsable').value = config.responsable || '';
+                document.getElementById('config-banque').value = config.banque || '';
+                document.getElementById('config-paiement').value = config.paiement || '';
+                document.getElementById('config-alerte').value = config.alerteEcheance || 7;
+
+                afficherStock();
+                afficherHistorique();
+                afficherDemandesPrix();
+                updateDashboard();
+                updateDashStockCard();
+                requestAnimationFrame(() => drawRevenueChart());
+                updateStockValueUI({ objectif: 500000 });
+
+                // --- CONFIG IMAGES ---
+                if (config.logo) {
+                    document.getElementById('logo-preview').src = config.logo;
+                    document.getElementById('logo-preview').style.display = 'block';
+                    document.getElementById('logo-text').textContent = 'Logo chargé';
+                }
+
+                // ⭐ AVATAR USER
+                if (config.avatar) {
+                    appliquerAvatarUI(config.avatar);
+                }
+
+                // ⭐ APP LOGO
+                if (config.appLogo) {
+                    appliquerAppLogoUI(config.appLogo);
+                }
+
+                console.log('✅ Données chargées depuis IndexedDB');
+
+            } catch(e) {
+                console.error('❌ Erreur chargement IndexedDB:', e);
+                // Fallback: essayer LocalStorage
+                console.log('🔄 Fallback LocalStorage...');
+                chargerDepuisLocalStorageFallback();
+            }
+        }
+
+        // ✅ Fallback function (au cas où IndexedDB fail)
+        function chargerDepuisLocalStorageFallback() {
             const s = localStorage.getItem('stock-data');
             const h = localStorage.getItem('historique-data');
             const c = localStorage.getItem('config-data');
-            const dpData = localStorage.getItem('demandes-prix-data'); // ✅ VAOVAO
-
+            const dpData = localStorage.getItem('demandes-prix-data');
 
             stock = s ? JSON.parse(s) : {};
             historique = h ? JSON.parse(h) : [];
             config = c ? JSON.parse(c) : {};
-            demandesPrix = dpData ? JSON.parse(dpData) : []; // ✅ VAOVAO
+            demandesPrix = dpData ? JSON.parse(dpData) : [];
 
+            console.log('✅ Chargé depuis LocalStorage (fallback)');
+        }
 
-            // --- NORMALISATION STOCK (lots) ---
-            Object.keys(stock).forEach(p => {
-                const item = stock[p] || {};
-                stock[p] = item;
-
-
-                // 1) Raha ancien format: { quantite, prixMoyen } -> avadika ho lots
-                if(!Array.isArray(item.lots)) item.lots = [];
-                if(item.lots.length === 0 && (item.quantite != null || item.prixMoyen != null)) {
-                    const q = Number(item.quantite || 0);
-                    const pr = Number(item.prixMoyen || 0);
-                    if(q > 0) item.lots.push({ qte: q, prix: pr, date: item.date || new Date().toISOString().slice(0,10) });
-                }
-
-
-                // 2) Raha lots efa misy fa clé tsy mitovy: quantite/prixMoyen -> qte/prix
-                item.lots = item.lots.map(l => ({
-                    ...l,
-                    qte: Number(l.qte ?? l.quantite ?? 0),
-                    prix: Number(l.prix ?? l.prixAchat ?? l.prixMoyen ?? 0)
-                })).filter(l => Number(l.qte) > 0);
-
-
-                // 3) Unit default
-                if(!item.unite) item.unite = 'Pièce';
-            });
-
-
-            document.getElementById('config-nom').value = config.nom || '';
-            document.getElementById('config-activite').value = config.activite || '';
-            document.getElementById('config-adresse').value = config.adresse || '';
-            document.getElementById('config-nif').value = config.nif || '';
-            document.getElementById('config-stat').value = config.stat || '';
-            document.getElementById('config-rc').value = config.rc || '';
-            document.getElementById('config-responsable').value = config.responsable || '';
-            document.getElementById('config-banque').value = config.banque || '';
-            document.getElementById('config-paiement').value = config.paiement || '';
-            document.getElementById('config-alerte').value = config.alerteEcheance || 7;  
-
-
-
-            afficherStock();
-            afficherHistorique();
-            afficherDemandesPrix(); // ✅ VAOVAO
-            updateDashboard();
-            updateDashStockCard();
-            requestAnimationFrame(() => drawRevenueChart());
-            updateStockValueUI({ objectif: 500000 });
-
-            // --- CONFIG UI ---
-            if (config.logo) {
-                document.getElementById('logo-preview').src = config.logo;
-                document.getElementById('logo-preview').style.display = 'block';
-                document.getElementById('logo-text').textContent = 'Logo chargé';
-            }
-
-            // ⭐ AVATAR USER - Charger rehefa mi-load
-            if (config.avatar) {
-                appliquerAvatarUI(config.avatar);
-            }
-
-            // ⭐ APP LOGO - Charger rehefa mi-load  
-            if (config.appLogo) {
-                appliquerAppLogoUI(config.appLogo);
+        async function migrerDepuisLocalStorage() {
+            const saved = localStorage.getItem('gestion-achat-vente');
+            if(!saved) return;
+            
+            try {
+                const data = JSON.parse(saved);
+                
+                // Save to IndexedDB
+                if(data.stock) await idbSave('stock', 'data', data.stock);
+                if(data.historique) await idbSave('historique', 'data', data.historique);
+                if(data.config) await idbSave('config', 'data', data.config);
+                if(data.demandesPrix) await idbSave('demandesPrix', 'data', data.demandesPrix);
+                
+                console.log('✅ Migration LocalStorage → IndexedDB réussie!');
+                
+                // Clear LocalStorage après migration
+                localStorage.removeItem('gestion-achat-vente');
+            } catch(e) {
+                console.error('❌ Erreur migration:', e);
             }
         }
 
