@@ -1635,26 +1635,39 @@
 
             /* Tables */
             table {
-                font-size: 10px !important;
+                font-size: 11px !important;
                 width: 100%;
-                display: block;
+                display: table !important; /* Force table layout */
+                border-collapse: collapse;
+                table-layout: auto;
+            }
+
+            .tab-content {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                width: 100%;
             }
 
             thead, tbody, tfoot {
-                display: table;
-                width: 100%;
+                display: table-header-group;
+                width: auto;
+            }
+
+            tr {
+                display: table-row;
             }
 
             th, td {
-                padding: 4px 6px !important;
+                display: table-cell !important;
+                padding: 8px 6px !important;
                 white-space: nowrap;
+                vertical-align: middle;
             }
 
-            /* Wrapper pour scroll horizontal tables */
-            .tab-content table {
-                min-width: 100%;
+            /* Fix alignment for specific columns on mobile */
+            th[style*="text-align:right"], 
+            td[style*="text-align:right"] {
+                text-align: right !important;
             }
 
             /* Stats cards */
@@ -2291,17 +2304,17 @@
                         <div id="dp-liste-section" style="display:none;">
                             <div class="section-title">Demandes en Cours</div>
                             <table id="dp-table">
-                                <thead>
-                                    <tr>
-                                        <th>Numéro</th>
-                                        <th>Produit</th>
-                                        <th>Quantité</th>
-                                        <th>Nb Offres</th>
-                                        <th>Prix Min</th>
-                                        <th>Statut</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Produit</th>
+                                            <th style="text-align:right;">Quantité</th>
+                                            <th style="text-align:right;">Offres</th>
+                                            <th style="text-align:right;">Prix Min</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                 <tbody id="dp-tbody"></tbody>
                             </table>
                                     
@@ -2611,16 +2624,16 @@
                     </div>
                     
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Produit</th>
-                                <th>Quantité</th>
-                                <th>Unité</th>
-                                <th>Prix / Lots</th>
-                                <th>Valeur totale</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Produit</th>
+                                            <th style="text-align:right;">Quantité</th>
+                                            <th>Unité</th>
+                                            <th style="text-align:right;">Prix Moyen</th>
+                                            <th style="text-align:right;">Valeur</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
                         <tbody id="stock-tbody"></tbody>
                     </table>
                     <div id="stock-pagination"></div>
@@ -2638,16 +2651,16 @@
                     </div>
                     
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Numéro</th>
-                                <th>Tiers</th>
-                                <th>Montant</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>N°</th>
+                                            <th>Tiers</th>
+                                            <th style="text-align:right;">Total</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                         <tbody id="historique-tbody"></tbody>
                     </table>
                     <div id="historique-pagination"></div>
@@ -3712,14 +3725,14 @@
                 tbody.innerHTML += `
                 <tr>
                     <td>${item.produit}</td>
-                    <td>${item.qte}</td>
+                    <td style="text-align:right;">${item.qte}</td>
                     <td>${item.unite}</td>
-                    <td>
+                    <td style="text-align:right;">
                         <div style="font-weight:600;">${prixMoy.toLocaleString()} Ar</div>
                         <small style="color:#666; font-size:11px;">(${nbLots} lot${nbLots>1?'s':''})</small>
                         <button onclick="showLotDetails('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="margin-top:4px;">📦 Détails FIFO</button>
                     </td>
-                    <td>${item.valeur.toLocaleString()} Ar</td>
+                    <td style="text-align:right;">${item.valeur.toLocaleString()} Ar</td>
                     <td><span class="stock-badge ${badgeClass}">${item.qte < 5 ? 'Faible' : (item.qte < 20 ? 'Moyen' : 'Bon')}</span></td>
                 </tr>
                 `;
@@ -3951,7 +3964,7 @@
                         <td>${h.type}${badgePaiement}</td>
                         <td>${h.numero || '-'}</td>
                         <td>${h.tiers}</td>
-                        <td style="font-weight:600;">${h.total.toLocaleString()} Ar</td>
+                        <td style="font-weight:600; text-align:right;">${h.total.toLocaleString()} Ar</td>
                         <td>
                             <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
                             ${
@@ -6022,9 +6035,9 @@
                     <tr>
                         <td>${d.id}</td>
                         <td><strong>${d.produit}</strong></td>
-                        <td>${d.quantite} ${d.unite}</td>
-                        <td>${nbOffres}</td>
-                        <td>${prixMin > 0 ? prixMin.toLocaleString('fr-FR') + ' Ar' : '-'}</td>
+                        <td style="text-align:right;">${d.quantite} ${d.unite}</td>
+                        <td style="text-align:right;">${nbOffres}</td>
+                        <td style="text-align:right;">${prixMin > 0 ? prixMin.toLocaleString('fr-FR') + ' Ar' : '-'}</td>
                         <td>${badge}</td>
                         <td>
                             <div style="display:flex; gap:4px;">
