@@ -55,7 +55,7 @@
         .content,
         .tab-content {
             max-width: 100%;
-            /* overflow-x: hidden; */ /* Nesorina mba tsy hanakana ny scroll ao anatiny */
+            overflow-x: hidden; /* Naverina mba tsy ho tapaka ny sisiny */
         }
 
         /* ✅ TABLE CONTAINER FOR HORIZONTAL SCROLL */
@@ -70,8 +70,9 @@
         }
 
         .table-container table {
-            margin-top: 0; /* Nesorina satria efa misy margin ny container */
-            min-width: 800px; /* Force scroll on small screens */
+            margin-top: 0;
+            min-width: 100%; /* Mampiasa ny toerana misy azy */
+            width: max-content; /* Manery ny tabilao hihalehibe araka ny votoatiny */
         }
 
 
@@ -914,12 +915,19 @@
         #comparaison-modal .modal-body {
             padding: 20px 24px;
             overflow-y: auto;
-            overflow-x: hidden; /* Pas de scroll horizontal */
+            overflow-x: auto; /* Navela ny scroll horizontal */
         }
 
         #comparaison-modal .modal-table {
             width: 100%;
-            table-layout: fixed; /* Largeurs fixes pour colonnes */
+            min-width: 800px;
+            table-layout: auto;
+        }
+        
+        /* Misoroka ny fifanosin'ny soratra ao anatin'ny tabilao */
+        .modal-table th, .modal-table td {
+            white-space: nowrap;
+            min-width: 100px;
         }
 
 
@@ -959,6 +967,7 @@
 
         .modal-table{
             width:100%;
+            min-width: 600px; /* Force scroll ho an'ny modal hafa */
             border-collapse:collapse;
             background:white;
         }
@@ -2846,20 +2855,22 @@
                 </div>
                 
                 <!-- Tableau comparatif -->
-                <table class="modal-table">
-                    <thead>
-                        <tr>
-                            <th style="width:60px; text-align:center;">✓</th>
-                            <th style="width:25%;">Fournisseur</th>
-                            <th style="width:15%;">Prix U</th>
-                            <th style="width:15%;">Total</th>
-                            <th style="width:10%;">Délai</th>
-                            <th style="width:20%;">Note</th>
-                            <th style="width:15%;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comp-tbody"></tbody>
-                </table>
+                <div class="table-container" style="margin-top:0; border-radius:8px;">
+                    <table class="modal-table" style="min-width:100%; width:max-content;">
+                        <thead>
+                            <tr>
+                                <th style="width:60px; text-align:center;">✓</th>
+                                <th style="width:25%;">Fournisseur</th>
+                                <th style="width:15%;">Prix U</th>
+                                <th style="width:15%;">Total</th>
+                                <th style="width:10%;">Délai</th>
+                                <th style="width:20%;">Note</th>
+                                <th style="width:15%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comp-tbody"></tbody>
+                    </table>
+                </div>
 
 
                 <div style="margin-top:12px; padding:10px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; font-size:12px; color:#92400e;">
