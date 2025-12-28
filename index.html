@@ -44,7 +44,7 @@
             color: #111827;
             min-height: 100vh;
             display: flex;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Misoroka ny scroll horizontal amin'ny pejy manontolo */
             width: 100%;
             max-width: 100vw;
             position: relative;
@@ -55,7 +55,23 @@
         .content,
         .tab-content {
             max-width: 100%;
-            overflow-x: hidden;
+            /* overflow-x: hidden; */ /* Nesorina mba tsy hanakana ny scroll ao anatiny */
+        }
+
+        /* ✅ TABLE CONTAINER FOR HORIZONTAL SCROLL */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 12px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background: white;
+        }
+
+        .table-container table {
+            margin-top: 0; /* Nesorina satria efa misy margin ny container */
+            min-width: 800px; /* Force scroll on small screens */
         }
 
 
@@ -415,10 +431,9 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 12px;
             background: white;
-            border-radius: 14px;
-            overflow: hidden;
+            /* border-radius: 14px; */ /* Nafindra any amin'ny container */
+            /* overflow: hidden; */
         }
 
         th {
@@ -2303,20 +2318,22 @@
                         <!-- Section: Liste demandes -->
                         <div id="dp-liste-section" style="display:none;">
                             <div class="section-title">Demandes en Cours</div>
-                            <table id="dp-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Produit</th>
-                                            <th style="text-align:right;">Quantité</th>
-                                            <th style="text-align:right;">Offres</th>
-                                            <th style="text-align:right;">Prix Min</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                <tbody id="dp-tbody"></tbody>
-                            </table>
+                            <div class="table-container">
+                                <table id="dp-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Produit</th>
+                                                <th style="text-align:right;">Quantité</th>
+                                                <th style="text-align:right;">Offres</th>
+                                                <th style="text-align:right;">Prix Min</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                    <tbody id="dp-tbody"></tbody>
+                                </table>
+                            </div>
                                     
                             <!-- Zone filtre & budget -->
                             <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
@@ -2341,19 +2358,21 @@
                             <!-- Récap des articles sélectionnés -->
                             <div id="dp-selected-wrap" style="margin-top:14px;">
                                 <div class="section-title">Articles sélectionnés par fournisseur</div>
-                                <table id="dp-selected-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Produit</th>
-                                            <th>Quantité</th>
-                                            <th>Fournisseur</th>
-                                            <th style="text-align:right;">Prix U</th>
-                                            <th style="text-align:right;">Total</th>
-                                            <th>Statut</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="dp-selected-tbody"></tbody>
-                                </table>
+                                <div class="table-container">
+                                    <table id="dp-selected-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Produit</th>
+                                                <th>Quantité</th>
+                                                <th>Fournisseur</th>
+                                                <th style="text-align:right;">Prix U</th>
+                                                <th style="text-align:right;">Total</th>
+                                                <th>Statut</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dp-selected-tbody"></tbody>
+                                    </table>
+                                </div>
                             </div>
 
                         </div>
@@ -2448,26 +2467,28 @@
                     
                     <div id="achat-articles-section" style="display:none;">
                         <div class="section-title">📋 Articles</div>
-                        <table id="achat-table">
-                            <thead>
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Quantité</th>
-                                    <th>Unité</th>
-                                    <th>Prix U</th>
-                                    <th>Montant</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="achat-tbody"></tbody>
-                            <tfoot>
-                                <tr style="background: #fff3cd; font-weight: bold;">
-                                    <td colspan="4" style="text-align: right;">TOTAL</td>
-                                    <td id="achat-total">0 Ar</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <div class="table-container">
+                            <table id="achat-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Quantité</th>
+                                        <th>Unité</th>
+                                        <th>Prix U</th>
+                                        <th>Montant</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="achat-tbody"></tbody>
+                                <tfoot>
+                                    <tr style="background: #fff3cd; font-weight: bold;">
+                                        <td colspan="4" style="text-align: right;">TOTAL</td>
+                                        <td id="achat-total">0 Ar</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                         
                         <div class="action-buttons">
                             <button class="btn btn-success" onclick="validerAchat()">✅ Valider l'achat</button>
@@ -2577,27 +2598,27 @@
 
                     <div id="vente-articles-section" style="display:none;">
                         <div class="section-title">📋 Articles</div>
-                        <table id="vente-table">
-                            <thead>
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Quantité</th>
-                                    <th>Unité</th>
-                                    <th>Prix U</th>
-                                    <th>Montant</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vente-tbody"></tbody>
-                            <tfoot>
-                                <tr style="background: #fff3cd; font-weight: bold;">
-                                    <td colspan="4" style="text-align: right;">TOTAL</td>
-                                    <td id="vente-total">0 Ar</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                        
+                        <div class="table-container">
+                            <table id="vente-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Quantité</th>
+                                        <th>Prix U</th>
+                                        <th>Montant</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vente-tbody"></tbody>
+                                <tfoot>
+                                    <tr style="background: #fff3cd; font-weight: bold;">
+                                        <td colspan="3" style="text-align: right;">TOTAL</td>
+                                        <td id="vente-total">0 Ar</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>                        
                         <div class="action-buttons">
                             <button class="btn btn-success" onclick="validerVente()">✅ Valider la vente</button>
                             <button class="btn btn-pdf" onclick="genererPDFVente('proforma')">📄 Proforma PDF</button>
@@ -2623,19 +2644,21 @@
                         <input type="text" id="search-stock" placeholder="🔍 Rechercher produit..." onkeyup="rechercherStock()">
                     </div>
                     
-                    <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Produit</th>
-                                            <th style="text-align:right;">Quantité</th>
-                                            <th>Unité</th>
-                                            <th style="text-align:right;">Prix Moyen</th>
-                                            <th style="text-align:right;">Valeur</th>
-                                            <th>Statut</th>
-                                        </tr>
-                                    </thead>
-                        <tbody id="stock-tbody"></tbody>
-                    </table>
+                    <div class="table-container">
+                        <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Produit</th>
+                                                <th style="text-align:right;">Quantité</th>
+                                                <th>Unité</th>
+                                                <th style="text-align:right;">Prix Moyen</th>
+                                                <th style="text-align:right;">Valeur</th>
+                                                <th>Statut</th>
+                                            </tr>
+                                        </thead>
+                            <tbody id="stock-tbody"></tbody>
+                        </table>
+                    </div>
                     <div id="stock-pagination"></div>
                 </div>
                 
@@ -2650,19 +2673,21 @@
                         </select>
                     </div>
                     
-                    <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Type</th>
-                                            <th>N°</th>
-                                            <th>Tiers</th>
-                                            <th style="text-align:right;">Total</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                        <tbody id="historique-tbody"></tbody>
-                    </table>
+                    <div class="table-container">
+                        <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>N°</th>
+                                                <th>Tiers</th>
+                                                <th style="text-align:right;">Total</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                            <tbody id="historique-tbody"></tbody>
+                        </table>
+                    </div>
                     <div id="historique-pagination"></div>
                 </div>
                 
