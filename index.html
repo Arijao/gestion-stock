@@ -181,7 +181,7 @@
         .container{
             max-width:1200px;
             margin:0 auto;
-            background:rgba(248,250,252,0.9);
+            background: #f8fafc;
             border-radius:24px;
             box-shadow:0 18px 45px rgba(15,23,42,0.18);
             overflow:hidden;
@@ -236,7 +236,7 @@
 
         .content{
             padding:20px 24px 24px 24px;
-            background:#f3f6fb;
+            background: #f1f5f9;
         }
 
         .tab-content{
@@ -253,11 +253,11 @@
 
         /* FORM / BUTTONS / TABLE: modernisé fa mitovy classes */
         .form-section{
-            background:#f9fafb;
+            background: #f8fafc;
             padding:18px;
             border-radius:18px;
             margin-bottom:16px;
-            border:1px solid #e0e7ff;
+            border: 1px solid #e2e8f0;
             box-shadow:0 6px 16px rgba(15,23,42,0.06);
         }
         .form-section h3{
@@ -267,11 +267,11 @@
             font-weight:600;
         }
 
-        .form-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-            gap:14px;
-        }
+            .form-grid{
+                display:grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap:10px;
+            }
         .form-group{display:flex;flex-direction:column;}
         .form-group label{
             margin-bottom:5px;
@@ -288,7 +288,7 @@
             border: 1px solid #d1d5db;
             border-radius: 10px;
             font-size: 13px;
-            background: #f9fafb;
+            background: #ffffff;
             transition: all 0.2s;
         }
 
@@ -490,7 +490,7 @@
 
         .stats-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap:14px;
             margin-bottom:16px;
         }
@@ -534,7 +534,7 @@
             border-radius:999px;
             border:1px solid #d1d5db;
             font-size:13px;
-            background:#f9fafb;
+            background: #f8fafc;
         }
 
         /* ========== BADGES & CARDS ========== */
@@ -896,7 +896,7 @@
         }
 
         .modal {
-            background: #f9fafb;
+            background: #ffffff;
             border-radius: 18px;
             box-shadow: 0 24px 60px rgba(15,23,42,0.45);
             width: min(700px, 90vw); /* Default pour autres modals */
@@ -909,19 +909,46 @@
         /* ✅ VAOVAO - Style spécial pour modal comparaison */
         #comparaison-modal .modal {
             width: min(1100px, 95vw) !important; /* Plus large */
-            max-height: 85vh;
+            max-height: 90vh;
         }
 
         #comparaison-modal .modal-body {
             padding: 20px 24px;
             overflow-y: auto;
-            overflow-x: auto; /* Navela ny scroll horizontal */
+            overflow-x: hidden; /* Misoroka scroll horizontal amin'ny modal body */
         }
 
         #comparaison-modal .modal-table {
             width: 100%;
-            min-width: 800px;
+            min-width: 100%;
             table-layout: auto;
+        }
+
+        /* ✅ RESPONSIVE FORM GRID */
+        .responsive-form-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (min-width: 641px) {
+            .grid-3-cols { grid-template-columns: 2fr 1.2fr 1fr; }
+            .grid-2-cols-btn { grid-template-columns: 1fr auto; }
+        }
+
+        @media (max-width: 640px) {
+            .grid-3-cols, .grid-2-cols-btn { grid-template-columns: 1fr; }
+            .grid-2-cols-btn button { width: 100%; }
+            
+            #comparaison-modal .modal-body {
+                padding: 12px;
+            }
+            
+            .modal-table {
+                min-width: 100% !important;
+                display: block;
+                overflow-x: auto;
+            }
         }
         
         /* Misoroka ny fifanosin'ny soratra ao anatin'ny tabilao */
@@ -967,9 +994,17 @@
 
         .modal-table{
             width:100%;
-            min-width: 600px; /* Force scroll ho an'ny modal hafa */
+            min-width: 100%;
             border-collapse:collapse;
             background:white;
+        }
+        
+        @media (max-width: 640px) {
+            .modal-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
 
         .modal-table th,
@@ -1370,7 +1405,7 @@
         }
 
         .notif-item:hover {
-            background: #f9fafb;
+            background: #ffffff;
         }
 
         .notif-item.error { border-left: 4px solid #dc2626; }
@@ -1447,7 +1482,7 @@
         }
 
         .periode-option:hover {
-            background: #f9fafb;
+            background: #ffffff;
             color: #111827;
         }
 
@@ -1564,9 +1599,25 @@
             }
 
             .form-grid {
-                grid-template-columns: 1fr !important;
-                gap: 8px !important;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 10px;
+                }
+
+            /* Responsive pour tablettes et petits écrans landscape */
+            @media (max-width: 900px) {
+                .form-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
             }
+
+            /* Responsive pour mobiles portrait */
+            @media (max-width: 600px) {
+                .form-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
 
             .form-section {
                 padding: 8px !important;
@@ -1858,6 +1909,30 @@
             }
         }
 
+        /* Responsive Dashboard header */
+        @media (max-width: 820px) {
+            #dashboard-tab .dash-top {
+                flex-direction: column;
+                gap: 10px;
+                padding-top: 0 !important;
+            }
+            
+            #dashboard-tab .dash-top h2 {
+                font-size: 20px !important;
+            }
+            
+            .dash-actions {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                padding-top: 0 !important;
+            }
+            
+            .user-chip {
+                order: -1;
+            }
+        }
+
         /* PAGINATION */
         .pagination-wrapper {
             display: flex;
@@ -1959,7 +2034,7 @@
         /* Style select type calcul */
         #marge-type {
             font-weight: 600;
-            background: #f9fafb;
+            background: #ffffff;
             border: 1px solid #d1d5db;
             padding: 9px 11px;
             border-radius: 10px;
@@ -1975,6 +2050,263 @@
 
         #marge-help {
             font-style: italic;
+        }
+
+    
+        /* Fix for grid on large screens */
+        @media (min-width: 1200px) {
+            .form-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+        }
+        
+        /* Specific fix for "Ajouter un article" in Vente */
+        #vente-tab .form-section:nth-child(2) .form-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+
+        /* Soften the cards and sections */
+        .form-section {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        }
+        
+        .stat-card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        .container {
+            background: #f8fafc !important;
+        }
+
+        .content {
+            background: #f1f5f9 !important;
+        }
+
+        /* Input focus improvement */
+        .form-group input:focus, .form-group select:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        /* Sidebar toggle visibility */
+        .sidebar-toggle {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+    
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(248,250,252,0.9);
+            border-radius: 24px;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.18);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* Responsive container */
+        @media (max-width: 820px) {
+            .container {
+                border-radius: 16px;
+                width: calc(100% - 8px);
+                margin: 0 4px;
+            }
+            
+            .main-wrapper {
+                padding: 8px !important;
+            }
+        }
+
+        /* ========== RESPONSIVE VENTE FORM ========== */
+
+        /* Classes spécifiques pour contrôle colonnes */
+        .vente-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px;
+        }
+
+        .vente-grid-couts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 10px;
+        }
+
+        /* Tablettes et petits paysage (jusqu'à 900px) */
+        @media (max-width: 900px) {
+            /* Détails coûts passent en 1 colonne */
+            .vente-grid-couts {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Garde 2 colonnes pour stock/quantité */
+            .vente-grid-2 {
+                grid-template-columns: 1fr 1fr !important;
+            }
+        }
+
+        /* iPhone X landscape et similaires (jusqu'à 820px) */
+        @media (max-width: 820px) {
+            /* Tout passe en 1 colonne */
+            .vente-grid-2 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .vente-grid-couts {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Forcer form-grid normal en 1 colonne */
+            #vente-tab .form-section .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Améliorer lisibilité mobile */
+            #vente-tab .form-group input,
+            #vente-tab .form-group select,
+            #vente-tab .form-group textarea {
+                font-size: 14px;
+                padding: 11px 12px;
+                min-height: 42px;
+            }
+            
+            #vente-tab .form-group label {
+                font-size: 13px;
+                margin-bottom: 6px;
+            }
+        }
+
+        /* Mobiles portrait (jusqu'à 600px) */
+        @media (max-width: 600px) {
+            /* Sécurité: tout en 1 colonne */
+            #vente-tab .form-grid,
+            .vente-grid-2,
+            .vente-grid-couts {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Inputs plus grands pour touch */
+            #vente-tab .form-group input,
+            #vente-tab .form-group select {
+                font-size: 16px; /* Évite zoom automatique iOS */
+                padding: 12px;
+                min-height: 44px;
+            }
+        }
+
+        /* ========== RESPONSIVE TABS & HEADER ========== */
+
+        /* Tablettes et petits paysages (jusqu'à 900px) */
+        @media (max-width: 900px) {
+            .header h1 {
+                font-size: 20px !important;
+            }
+            
+            .header p {
+                font-size: 12px !important;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 0 16px 10px 16px;
+                gap: 4px;
+                scrollbar-width: thin;
+            }
+            
+            .tab {
+                font-size: 12px !important;
+                padding: 7px 12px !important;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        }
+
+        /* iPhone X landscape et similaires (jusqu'à 820px) */
+        @media (max-width: 820px) {
+            /* Header plus compact */
+            .header {
+                padding: 14px 16px 8px 16px !important;
+            }
+            
+            .header h1 {
+                font-size: 18px !important;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            /* Logo app plus petit */
+            .app-mark {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 16px !important;
+                margin-right: 6px !important;
+            }
+            
+            .header p {
+                font-size: 11px !important;
+                display: none; /* Cache le sous-titre */
+            }
+            
+            /* Tabs scrollables */
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 0 12px 8px 12px !important;
+                gap: 3px;
+                display: flex;
+                flex-wrap: nowrap;
+            }
+            
+            .tab {
+                font-size: 11px !important;
+                padding: 6px 10px !important;
+                white-space: nowrap;
+                flex: 0 0 auto;
+                min-width: fit-content;
+            }
+            
+            /* Scrollbar styling */
+            .tabs::-webkit-scrollbar {
+                height: 3px;
+            }
+            
+            .tabs::-webkit-scrollbar-track {
+                background: #e5e7eb;
+                border-radius: 3px;
+            }
+            
+            .tabs::-webkit-scrollbar-thumb {
+                background: #9ca3af;
+                border-radius: 3px;
+            }
+        }
+
+        /* Mobiles portrait (jusqu'à 600px) */
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 16px !important;
+            }
+            
+            .app-mark {
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 14px !important;
+            }
+            
+            .tabs {
+                padding: 0 8px 6px 8px !important;
+            }
+            
+            .tab {
+                font-size: 10px !important;
+                padding: 5px 8px !important;
+            }
         }
 
     </style>
@@ -2350,7 +2682,7 @@
                                 <!-- Filtre demandes -->
                                 <div style="display:flex; gap:8px; align-items:center; font-size:13px;">
                                     <span style="font-weight:600; color:#374151;">Afficher :</span>
-                                    <select id="dp-filter-statut" onchange="afficherDemandesPrix()" style="padding:6px 10px; border-radius:999px; border:1px solid #d1d5db; font-size:12px; background:#f9fafb;">
+                                    <select id="dp-filter-statut" onchange="afficherDemandesPrix()" style="padding:6px 10px; border-radius:999px; border:1px solid #d1d5db; font-size:12px; background: #f8fafc;">
                                         <option value="tous">Toutes</option>
                                         <option value="en_attente">En attente</option>
                                         <option value="validé">Validées</option>
@@ -2504,9 +2836,10 @@
                         </div>
                     </div>
                 </div>
-                <!-- TAB ACHAT farany eto, batch manaraka ny TAB VENTE -->
+
                 <!-- TAB VENTE -->
                 <div id="vente-tab" class="tab-content">
+                    <!-- SECTION 1: Enregistrer une vente -->
                     <div class="form-section">
                         <h3>Enregistrer une vente</h3>
                         <div class="form-grid">
@@ -2529,17 +2862,19 @@
                                     Nombre de jours pour payer la facture
                                 </small>
                             </div>
-
                             <div class="form-group">
-                                <label>📄 Numéro</label>
+                                <label>🔄 Numéro</label>
                                 <input type="text" id="vente-numero" readonly style="background: #f0f0f0;">
                             </div>
                         </div>
                     </div>
 
+                    <!-- SECTION 2: Ajouter un article -->
                     <div class="form-section">
                         <h3>Ajouter un article</h3>
-                        <div class="form-grid">
+                        
+                        <!-- GROUPE 1: Produit (full width) -->
+                        <div class="form-grid" style="grid-template-columns: 1fr;">
                             <div class="form-group">
                                 <label>Produit</label>
                                 <div style="position: relative;">
@@ -2554,6 +2889,10 @@
                                 </div>
                                 <input type="hidden" id="vente-produit-selected">
                             </div>
+                        </div>
+                        
+                        <!-- GROUPE 2: Stock & Quantité (2 colonnes) -->
+                        <div class="form-grid vente-grid-2">
                             <div class="form-group">
                                 <label>Stock disponible</label>
                                 <input type="text" id="vente-stock-dispo" readonly>
@@ -2562,10 +2901,18 @@
                                 <label>Quantité</label>
                                 <input type="number" id="vente-quantite" min="1" oninput="updateVenteCostAndMargeUI()">
                             </div>
+                        </div>
+                        
+                        <!-- GROUPE 3: Prix unitaire vente (full width) -->
+                        <div class="form-grid" style="grid-template-columns: 1fr;">
                             <div class="form-group">
                                 <label>Prix unitaire (Ar)</label>
                                 <input type="number" id="vente-prix" min="0" oninput="updateVenteCostAndMargeUI()">
                             </div>
+                        </div>
+                        
+                        <!-- GROUPE 4: Détails coûts (3 colonnes sur grand écran, responsive) -->
+                        <div class="form-grid vente-grid-couts">
                             <div class="form-group">
                                 <label>Prix d'achat unitaire (revient)</label>
                                 <input type="text" id="vente-pa-unit" readonly>
@@ -2578,7 +2925,10 @@
                                 <label>Marge totale</label>
                                 <input type="text" id="vente-marge-total" readonly>
                             </div>
-                            <!-- ✅ VAOVAO: Switch Type Calcul -->
+                        </div>
+                        
+                        <!-- GROUPE 5: Calcul marge (2 colonnes) -->
+                        <div class="form-grid vente-grid-2">
                             <div class="form-group">
                                 <label>Type de calcul</label>
                                 <select id="marge-type" onchange="changerTypeCalcul()">
@@ -2586,7 +2936,6 @@
                                     <option value="marge">Marge (% sur prix de vente)</option>
                                 </select>
                             </div>
-
                             <div class="form-group">
                                 <label id="marge-label">Markup (%)</label>
                                 <input type="number" id="vente-marge-pct" min="0" max="200" value="30" oninput="suggestPrixVenteFromMarge()">
@@ -2594,7 +2943,6 @@
                                     Ex: 50% → Prix vente = Prix achat × 1.50
                                 </small>
                             </div>
-
                         </div>
                         
                         <!-- ✅ BOUTON EN BAS À DROITE -->
@@ -2605,6 +2953,7 @@
                         </div>
                     </div>
 
+                    <!-- SECTION 3: Liste articles -->
                     <div id="vente-articles-section" style="display:none;">
                         <div class="section-title">📋 Articles</div>
                         <div class="table-container">
@@ -2613,6 +2962,7 @@
                                     <tr>
                                         <th>Description</th>
                                         <th>Quantité</th>
+                                        <th>Unité</th>
                                         <th>Prix U</th>
                                         <th>Montant</th>
                                         <th>Action</th>
@@ -2621,7 +2971,7 @@
                                 <tbody id="vente-tbody"></tbody>
                                 <tfoot>
                                     <tr style="background: #fff3cd; font-weight: bold;">
-                                        <td colspan="3" style="text-align: right;">TOTAL</td>
+                                        <td colspan="4" style="text-align: right;">TOTAL</td>
                                         <td id="vente-total">0 Ar</td>
                                         <td></td>
                                     </tr>
@@ -2636,6 +2986,9 @@
                         </div>
                     </div>
                 </div>
+                <!-- FIN TAB VENTE -->
+
+
                 <!-- TAB STOCK -->
                 <div id="stock-tab" class="tab-content">
                     <div class="stats-grid">
@@ -2825,9 +3178,9 @@
 
                 
                 <!-- Ajouter offre -->
-                <div id="comp-form-ajout" style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:16px;">
+                <div id="comp-form-ajout" style="background: #f8fafc; padding:16px; border-radius:8px; margin-bottom:16px;">
                     <!-- Ligne 1: Fournisseur + Prix + Délai -->
-                    <div style="display:grid; grid-template-columns:2fr 1.2fr 1fr; gap:12px; margin-bottom:12px;">
+                    <div class="responsive-form-grid grid-3-cols">
                         <div class="form-group" style="margin:0;">
                             <label>Fournisseur</label>
                             <input type="text" id="comp-fournisseur" placeholder="Nom fournisseur">
@@ -2843,7 +3196,7 @@
                     </div>
                     
                     <!-- Ligne 2: Note + Bouton -->
-                    <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:end;">
+                    <div class="responsive-form-grid grid-2-cols-btn" style="align-items:end;">
                         <div class="form-group" style="margin:0;">
                             <label>Note (optionnel)</label>
                             <input type="text" id="comp-note" placeholder="Ex: Qualité supérieure, livraison rapide...">
@@ -4824,7 +5177,7 @@
                     ${demandesEnAttente.slice(0, 5).map(d => {
                         const nbOffres = d.fournisseurs ? d.fournisseurs.length : 0;
                         return `
-                        <div style="padding: 8px 10px; background: #f9fafb; border-radius: 8px; margin-bottom: 6px; border-left: 3px solid #f59e0b;">
+                        <div style="padding: 8px 10px; background: #ffffff; border-radius: 8px; margin-bottom: 6px; border-left: 3px solid #f59e0b;">
                             <div style="font-size: 11px; font-weight: 700; color: #111827;">
                                 ${d.produit}
                             </div>
