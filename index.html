@@ -2798,11 +2798,28 @@
                         </div>
                         
                         <!-- ✅ BOUTON EN BAS À DROITE -->
+                        <!-- BOUTON VISIBLE MAIS DOUX -->
                         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-                            <button class="btn-icon" onclick="ajouterArticleAchat()" title="Ajouter l'article" style="width:36px; height:36px; font-size:16px;">
-                                <i class="fa-solid fa-circle-plus"></i>
+                            <button onclick="ajouterArticleAchat()" 
+                                    style="background: #f3f4f6; 
+                                        color: #111827; 
+                                        border: 2px solid #e5e7eb; 
+                                        padding: 10px 18px; 
+                                        border-radius: 10px; 
+                                        font-size: 13px; 
+                                        font-weight: 600; 
+                                        cursor: pointer; 
+                                        display: flex; 
+                                        align-items: center; 
+                                        gap: 6px;
+                                        transition: all 0.2s;"
+                                    onmouseover="this.style.background='#111827'; this.style.color='#fff'; this.style.borderColor='#111827';"
+                                    onmouseout="this.style.background='#f3f4f6'; this.style.color='#111827'; this.style.borderColor='#e5e7eb';">
+                                <i class="fa-solid fa-plus"></i> Ajouter l'article
                             </button>
                         </div>
+
+
                     </div>
 
                     
@@ -2946,11 +2963,27 @@
                         </div>
                         
                         <!-- ✅ BOUTON EN BAS À DROITE -->
+                        <!-- BOUTON VISIBLE MAIS DOUX -->
                         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-                            <button class="btn-icon" onclick="ajouterArticleVente()" title="Ajouter l'article" style="width:36px; height:36px; font-size:16px;">
-                                <i class="fa-solid fa-circle-plus"></i>
+                            <button onclick="ajouterArticleVente()" 
+                                    style="background: #f3f4f6; 
+                                        color: #111827; 
+                                        border: 2px solid #e5e7eb; 
+                                        padding: 10px 18px; 
+                                        border-radius: 10px; 
+                                        font-size: 13px; 
+                                        font-weight: 600; 
+                                        cursor: pointer; 
+                                        display: flex; 
+                                        align-items: center; 
+                                        gap: 6px;
+                                        transition: all 0.2s;"
+                                    onmouseover="this.style.background='#111827'; this.style.color='#fff'; this.style.borderColor='#111827';"
+                                    onmouseout="this.style.background='#f3f4f6'; this.style.color='#111827'; this.style.borderColor='#e5e7eb';">
+                                <i class="fa-solid fa-plus"></i> Ajouter l'article
                             </button>
                         </div>
+
                     </div>
 
                     <!-- SECTION 3: Liste articles -->
@@ -4037,6 +4070,7 @@
                 statutPaiement: 'impayé',
                 dateLimite: dateLimiteCalculee,
                 montantPaye: 0,
+                paiements: [],
                 datePayement: null,
                 moyenPaiement: null
             });
@@ -4345,52 +4379,50 @@
                 const originalIdx = historique.findIndex(item => item === h);
                 
                 // ✅ Badge statut paiement
+                // Badge statut paiement - VERSION PLUS LISIBLE
                 let badgePaiement = '';
-                if(h.type === 'vente' && h.statutPaiement) {
-                    const couleur = h.statutPaiement === 'payé' ? '#16a34a' : '#6b7280';
-                    const icone = h.statutPaiement === 'payé' ? '✓' : '○';
-                    badgePaiement = `<span style="background:${couleur}; color:white; padding:2px 6px; border-radius:8px; font-size:10px; margin-left:6px; font-weight:600;">${icone}</span>`;
+                if (h.type === 'vente') {
+                    const resteAPayer = h.total - (h.montantPaye || 0);
+                    
+                    if (h.statutPaiement === 'pay' || resteAPayer <= 0) {
+                        badgePaiement = ` <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #16a34a;">✓ Payé</span>`;
+                    } else if (h.statutPaiement === 'partiel' && resteAPayer > 0) {
+                        badgePaiement = ` <span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #f59e0b;">⏳ Partiel</span>`;
+                    } else {
+                        badgePaiement = ` <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #dc2626;">✗ Impayé</span>`;
+                    }
                 }
-                
+
                 tbody.innerHTML += `
-                    <tr>
+                    <tr onclick="ouvrirDetailVente(${originalIdx})" 
+                        style="cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#f3f4f6'" 
+                        onmouseout="this.style.backgroundColor=''">
                         <td>${h.date}</td>
-                        <td>${h.type}${badgePaiement}</td>
+                        <td>
+                            ${h.type === 'achat' ? '<i class="fa-solid fa-cart-shopping"></i> Achat' : '<i class="fa-solid fa-receipt"></i> Vente'}${badgePaiement}
+                        </td>
                         <td>${h.numero || '-'}</td>
                         <td>${h.tiers}</td>
                         <td style="font-weight:600; text-align:right;">${h.total.toLocaleString()} Ar</td>
-                        <td>
+                        <td onclick="event.stopPropagation()">
                             <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
-                            ${
-                                h.type === 'achat'
-                                ? `<button class="btn-icon" onclick='ouvrirAchatModal(${JSON.stringify(h).replace(/'/g,"&#39;")})' title="Voir détails">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>`
-                                : `
-                                <button class="btn-compact" onclick='genererPDFDepuisHistorique(${JSON.stringify(h).replace(/'/g,"&#39;")},"facture")' title="Facture">
-                                    <i class="fa-solid fa-file-invoice"></i>
-                                </button>
-                                <button class="btn-compact" onclick='genererPDFDepuisHistorique(${JSON.stringify(h).replace(/'/g,"&#39;")},"proforma")' title="Proforma">
-                                    <i class="fa-solid fa-file-lines"></i>
-                                </button>
-                                <button class="btn-compact" onclick='genererPDFDepuisHistorique(${JSON.stringify(h).replace(/'/g,"&#39;")},"bon")' title="BL">
-                                    <i class="fa-solid fa-truck-fast"></i>
-                                </button>
-                                ${h.statutPaiement !== 'payé' ? `
-                                    <button class="btn-compact btn-compact-success" onclick="marquerPaye(${originalIdx})" title="Marquer comme payé">
-                                        <i class="fa-solid fa-check"></i>
+                                ${h.type === 'vente' ? `
+                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"facture")' title="Facture">
+                                        <i class="fa-solid fa-file-invoice"></i>
                                     </button>
-                                ` : `
-                                    <button class="btn-compact btn-compact-gray" onclick="annulerPaiement(${originalIdx})" title="Annuler paiement">
-                                        <i class="fa-solid fa-rotate-left"></i>
+                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"proforma")' title="Proforma">
+                                        <i class="fa-solid fa-file-lines"></i>
                                     </button>
-                                `}
-                                `
-                            }
+                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"bon")' title="BL">
+                                        <i class="fa-solid fa-truck-fast"></i>
+                                    </button>
+                                ` : ''}
                             </div>
                         </td>
                     </tr>
                 `;
+
             });
             
             // Create pagination
@@ -7097,9 +7129,287 @@
         }
 
         function ouvrirDetailVente(idx) {
-            // Redirect vers historique + afficher modal détail
-            sidebarShowTab('historique');
-            // ... afficher modal détail vente idx
+            const h = historique[idx];
+            
+            if (!h) {
+                alert('Transaction introuvable');
+                return;
+            }
+            
+            // Calcul du reste à payer (uniquement pour ventes)
+            const resteAPayer = h.type === 'vente' ? (h.total - (h.montantPaye || 0)) : 0;
+            const estTotalementPaye = h.statutPaiement === 'pay';
+            
+            // Tableau des articles
+            const articlesHTML = h.articles.map(a => `
+                <tr>
+                <td style="padding: 8px;">${a.produit}</td>
+                <td style="padding: 8px; text-align: center;">${a.quantite}</td>
+                <td style="padding: 8px; text-align: center;">${a.unite || 'Pce'}</td>
+                <td style="padding: 8px; text-align: right;">${(a.prix || 0).toLocaleString()} Ar</td>
+                <td style="padding: 8px; text-align: right; font-weight: 600;">${(a.total || 0).toLocaleString()} Ar</td>
+                </tr>
+            `).join('');
+            
+            // Section paiement (uniquement pour les ventes)
+            const sectionPaiement = h.type === 'vente' ? `
+                <div style="margin-top: 20px; padding: 16px; background: ${estTotalementPaye ? '#dcfce7' : '#fef3c7'}; border-radius: 12px; border-left: 4px solid ${estTotalementPaye ? '#16a34a' : '#f59e0b'};">
+                <h4 style="margin: 0 0 12px 0; font-size: 15px; font-weight: 700; color: ${estTotalementPaye ? '#166534' : '#92400e'}; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                    Informations paiement
+                </h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; margin-bottom: 12px;">
+                    <div><strong>Montant total:</strong> ${h.total.toLocaleString()} Ar</div>
+                    <div><strong>Échéance:</strong> ${h.dateLimite || 'Non définie'}</div>
+                    <div><strong>Déjà payé:</strong> <span style="color: #16a34a; font-weight: 600;">${(h.montantPaye || 0).toLocaleString()} Ar</span></div>
+                    <div><strong>Reste:</strong> <span style="font-weight: 700; color: ${resteAPayer > 0 ? '#dc2626' : '#16a34a'};">${resteAPayer.toLocaleString()} Ar</span></div>
+                </div>
+                
+                ${h.paiements && h.paiements.length > 0 ? `
+                    <details style="margin-top: 12px;">
+                    <summary style="cursor: pointer; font-weight: 600; color: #374151; font-size: 12px; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 6px;">
+                        📜 Historique des paiements (${h.paiements.length})
+                    </summary>
+                    <div style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f3f4f6;">
+                            <th style="padding: 6px; text-align: left;">Date</th>
+                            <th style="padding: 6px; text-align: right;">Montant</th>
+                            <th style="padding: 6px; text-align: left;">Mode</th>
+                            <th style="padding: 6px; text-align: left;">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${h.paiements.map(p => `
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 6px;">${p.date}</td>
+                                <td style="padding: 6px; text-align: right; font-weight: 600; color: #16a34a;">${p.montant.toLocaleString()} Ar</td>
+                                <td style="padding: 6px;">${p.mode}</td>
+                                <td style="padding: 6px; color: #6b7280;">${p.note || '-'}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                        </table>
+                    </div>
+                    </details>
+                ` : '<p style="font-size: 12px; color: #9ca3af; margin: 8px 0;">Aucun paiement enregistré.</p>'}
+                
+                ${!estTotalementPaye && resteAPayer > 0 ? `
+                    <button onclick="ouvrirFormulairePaiement(${idx})" style="width: 100%; margin-top: 12px; background: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                        <i class="fa-solid fa-plus"></i> Enregistrer un paiement
+                    </button>
+                    ` : `
+                    <div style="text-align: center; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 24px; color: #16a34a;"></i>
+                        <p style="margin: 8px 0 0 0; font-weight: 700; color: #166534;">✓ Facture totalement payée</p>
+                    </div>
+                `}
+                </div>
+            ` : '';
+            
+            // Création du modal
+            const modalHTML = `
+                <div class="modal-header">
+                <h3>
+                    ${h.type === 'achat' ? '🛒 Détail Achat' : '💰 Détail Vente'} - ${h.numero || 'N/A'}
+                </h3>
+                <button class="modal-close" onclick="fermerDetailVente()">×</button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p class="modal-info">
+                    <strong>Date:</strong> ${h.date} &nbsp;|&nbsp;
+                    <strong>${h.type === 'achat' ? 'Fournisseur' : 'Client'}:</strong> ${h.tiers}
+                    ${h.adresse ? ` &nbsp;|&nbsp; <strong>Adresse:</strong> ${h.adresse}` : ''}
+                </p>
+                
+                <table class="modal-table">
+                    <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th style="text-align: center;">Qté</th>
+                        <th style="text-align: center;">Unit</th>
+                        <th style="text-align: right;">P.U</th>
+                        <th style="text-align: right;">Montant</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${articlesHTML}
+                    </tbody>
+                    <tfoot>
+                    <tr style="background: #fef3c7; font-weight: bold;">
+                        <td colspan="4" style="text-align: right; padding: 10px;">TOTAL</td>
+                        <td style="text-align: right; padding: 10px;">${h.total.toLocaleString()} Ar</td>
+                    </tr>
+                    </tfoot>
+                </table>
+                
+                ${sectionPaiement}
+                
+                ${h.type === 'vente' ? `
+                    <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')" style="flex: 1;">
+                        <i class="fa-solid fa-file-invoice"></i> Facture
+                    </button>
+                    <button class="btn btn-info" onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')" style="flex: 1;">
+                        <i class="fa-solid fa-truck"></i> Bon livraison
+                    </button>
+                    </div>
+                ` : ''}
+                </div>
+            `;
+            
+            const modal = document.createElement('div');
+            modal.id = 'detail-vente-modal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class="modal" style="max-width: 800px;">${modalHTML}</div>`;
+            
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) fermerDetailVente();
+            });
+        }
+
+        function fermerDetailVente() {
+            const modal = document.getElementById('detail-vente-modal');
+            if (modal) modal.remove();
+        }
+
+        function ouvrirFormulairePaiement(idx) {
+            const h = historique[idx];
+            const resteAPayer = h.total - (h.montantPaye || 0);
+            
+            // ⬇️ AJOUTER CETTE VÉRIFICATION
+            if (resteAPayer <= 0) {
+                alert('⚠️ Cette facture est déjà totalement payée !');
+                return;
+            }
+            
+            fermerDetailVente(); // Fermer le modal de détail
+            
+            const modalHTML = `
+                <div class="modal-header">
+                <h3><i class="fa-solid fa-money-bill-wave"></i> Enregistrer un paiement</h3>
+                <button class="modal-close" onclick="fermerFormulairePaiement()">×</button>
+                </div>
+                <div class="modal-body">
+                <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                    <strong>Facture:</strong> ${h.numero} &nbsp;|&nbsp; <strong>Client:</strong> ${h.tiers}<br>
+                    <strong>Reste à payer:</strong> <span style="font-size: 18px; font-weight: 800; color: #dc2626;">${resteAPayer.toLocaleString()} Ar</span>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                    <label>Date du paiement</label>
+                    <input type="date" id="paiement-date" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                    <label>Montant (Ar)</label>
+                    <input type="number" id="paiement-montant" value="${resteAPayer}" min="1" max="${resteAPayer}">
+                    </div>
+                    <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select id="paiement-mode">
+                        <option value="Espèces">💵 Espèces</option>
+                        <option value="Chèque">📝 Chèque</option>
+                        <option value="Virement">🏦 Virement bancaire</option>
+                        <option value="Mobile Money">📱 Mobile Money</option>
+                        <option value="Carte bancaire">💳 Carte bancaire</option>
+                    </select>
+                    </div>
+                    <div class="form-group">
+                    <label>Note / Référence (optionnel)</label>
+                    <input type="text" id="paiement-note" placeholder="Ex: Chèque n° 12345">
+                    </div>
+                </div>
+                
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="validerPaiement(${idx})">
+                    <i class="fa-solid fa-check"></i> Valider le paiement
+                    </button>
+                    <button class="btn" onclick="fermerFormulairePaiement()">
+                    Annuler
+                    </button>
+                </div>
+                </div>
+            `;
+            
+            const modal = document.createElement('div');
+            modal.id = 'formulaire-paiement-modal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class="modal" style="max-width: 600px;">${modalHTML}</div>`;
+            
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) fermerFormulairePaiement();
+            });
+        }
+
+
+        function fermerFormulairePaiement() {
+            const modal = document.getElementById('formulaire-paiement-modal');
+            if (modal) modal.remove();
+        }
+
+        function validerPaiement(idx) {
+            const h = historique[idx];
+            const date = document.getElementById('paiement-date').value;
+            const montant = parseFloat(document.getElementById('paiement-montant').value);
+            const mode = document.getElementById('paiement-mode').value;
+            const note = document.getElementById('paiement-note').value.trim();
+            
+            // ⬇️ Calculer le reste ACTUEL
+            const resteAPayer = h.total - (h.montantPaye || 0);
+            
+            // ⬇️ VÉRIFICATIONS RENFORCÉES
+            if (!date || !montant || montant <= 0) {
+                alert('⚠️ Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+            
+            if (resteAPayer <= 0) {
+                alert('⚠️ Cette facture est déjà totalement payée !');
+                fermerFormulairePaiement();
+                return;
+            }
+            
+            if (montant > resteAPayer) {
+                alert(`⚠️ Le montant ne peut pas dépasser le reste à payer : ${resteAPayer.toLocaleString()} Ar`);
+                return;
+            }
+            
+            // Initialiser le tableau des paiements
+            if (!h.paiements) h.paiements = [];
+            
+            // Ajouter le paiement
+            h.paiements.push({
+                date: date,
+                montant: montant,
+                mode: mode,
+                note: note
+            });
+            
+            // Mettre à jour le montant payé
+            h.montantPaye = (h.montantPaye || 0) + montant;
+            
+            // Mettre à jour le statut
+            if (h.montantPaye >= h.total) {
+                h.statutPaiement = 'pay';
+                h.datePayement = date;
+            } else {
+                h.statutPaiement = 'partiel';
+            }
+            
+            // Sauvegarder
+            sauvegarderDonnees();
+            
+            alert(`✅ Paiement de ${montant.toLocaleString()} Ar enregistré avec succès !`);
+            fermerFormulairePaiement();
+            afficherHistorique();
+            updateNotificationBadge();
         }
 
         function toggleNotifications() {
