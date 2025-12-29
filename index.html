@@ -3299,12 +3299,14 @@
 
         // Window onload
         window.onload = async function() {
-            // ✅ Await chargerDonnees satria async
             await chargerDonnees();
-            
             updateDashboard();
             drawRevenueChart();
             updateNotificationBadge();
+            
+            // NOUVEAU : Initialiser les KPI de période
+            updateKPITransactionsPeriode();
+            updateKPIVentesPeriode();
             
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('achat-date').value = today;
@@ -3312,6 +3314,7 @@
             genererNumeroVente();
             masquerDatePicker();
         };
+
 
 
         function openDb() {
@@ -3438,6 +3441,8 @@
             if(tabName === 'demande-prix') afficherDemandesPrix();
             if (tabName === 'dashboard') {
                 updateDashboard();
+                updateKPITransactionsPeriode(); 
+                updateKPIVentesPeriode();
                 requestAnimationFrame(() => drawRevenueChart());
             }
 
@@ -5199,7 +5204,7 @@
 
 
         function updateDashboard() {
-            // Maka data (azo antoka na dia tsy mbola loaded aza ny globals)
+
             const stockData = (typeof stock !== 'undefined' && stock)
                 ? stock
                 : JSON.parse(localStorage.getItem('stock-data') || '{}');
@@ -5316,6 +5321,9 @@
                 if(progressEl) {
                     progressEl.style.width = `${pct}%`;
                 }
+                // Mise à jour des KPI de période
+                updateKPITransactionsPeriode();
+                updateKPIVentesPeriode();
             }
 
             // 9) CHART VENTES 7 JOURS
