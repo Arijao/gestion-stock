@@ -1117,6 +1117,59 @@
             gap:12px;
             margin-bottom:12px;
         }
+
+        /* FIX DROPDOWN MENU - Tsy hisitrika ao ambany card hafa */
+
+        /* 1. Card parent dia overflow visible */
+        .dash-card,
+        .dash-mini-card {
+        overflow: visible !important;
+        position: relative;
+        }
+
+        /* 2. Dropdown menu - z-index ambony be */
+        .periode-dropdown {
+        position: absolute;
+        top: 50px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+        padding: 6px;
+        min-width: 200px;
+        z-index: 9999 !important;
+        display: none;
+        }
+
+        /* 3. Card Transaction (eo ambony) - z-index ambony */
+        .dash-card:nth-child(2) {
+        z-index: 10 !important;
+        position: relative;
+        }
+
+        /* 4. Card Vente mini (eo ambany) - z-index ambany */
+        .dash-mini-card {
+        z-index: 1 !important;
+        position: relative;
+        }
+
+        /* 5. Responsive - tsy hivoaka ivelan'ny screen */
+        @media (max-width: 768px) {
+        .periode-dropdown {
+            right: -10px;
+            min-width: 180px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        }
+
+        @media (max-width: 480px) {
+        .periode-dropdown {
+            right: -5px;
+            min-width: 160px;
+            max-width: 200px;
+        }
+        }
+
         .dash-card{
             background: rgba(248, 250, 252, 0.8);
             border: 1px solid #e2e8f0;
