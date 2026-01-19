@@ -4501,13 +4501,13 @@
                         <td onclick="event.stopPropagation()">
                             <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
                                 ${h.type === 'vente' ? `
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'facture')" title="Facture">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(${originalIdx},'facture')" title="Facture">
                                         <i class="fa-solid fa-file-invoice"></i>
                                     </button>
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'proforma')" title="Proforma">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(${originalIdx},'proforma')" title="Proforma">
                                         <i class="fa-solid fa-file-lines"></i>
                                     </button>
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'bon')" title="BL">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(${originalIdx},'bon')" title="BL">
                                         <i class="fa-solid fa-truck-fast"></i>
                                     </button>
                                 ` : ''}
