@@ -3348,6 +3348,8 @@
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
  
+        let formatImpression = 'a4'; // Par défaut: 'a4' ou 'ticket'
+        let pendingPDFData = null;
 
 
         // Window onload
@@ -6025,8 +6027,103 @@
             document.getElementById('vente-numero').value  = numBackup;
         }
 
+        function ouvrirFormatModal(pdfData) {
+            pendingPDFData = pdfData;
+            const modal = document.getElementById('format-choice-modal');
 
+            if (modal) {
+                modal.style.display = 'flex';
 
+                // Reset visuel des options
+                const ticketOpt = document.getElementById('ticket-option');
+                const a4Opt = document.getElementById('a4-option');
+                if (ticketOpt) ticketOpt.style.borderColor = '#e5e7eb';
+                if (a4Opt) a4Opt.style.borderColor = '#e5e7eb';
+
+                // Masquer le bouton continuer
+                const btnConf = document.getElementById('btn-confirmer-format');
+                if (btnConf) btnConf.style.display = 'none';
+
+                // Masquer l'aperçu
+                const preview = document.getElementById('format-preview');
+                if (preview) preview.style.display = 'none';
+
+                formatImpression = 'a4'; // Réinitialiser à défaut
+            }
+        }
+
+        /**
+         * Ferme le modal de sélection du format
+         */
+        function fermerFormatModal() {
+            const modal = document.getElementById('format-choice-modal');
+            if (modal) modal.style.display = 'none';
+
+            pendingPDFData = null;
+            formatImpression = 'a4';
+        }
+
+        /**
+         * Gère la sélection du format d'impression
+         * @param {string} format - 'ticket' ou 'a4'
+         */
+        function selectionnerFormat(format) {
+            formatImpression = format;
+
+            const ticketOpt = document.getElementById('ticket-option');
+            const a4Opt = document.getElementById('a4-option');
+            const preview = document.getElementById('preview-text');
+            const btnConf = document.getElementById('btn-confirmer-format');
+            const prevDiv = document.getElementById('format-preview');
+
+            if (format === 'ticket') {
+                // Mise en évidence option ticket
+                if (ticketOpt) ticketOpt.style.borderColor = '#3b82f6';
+                if (a4Opt) a4Opt.style.borderColor = '#e5e7eb';
+
+                // Texte aperçu
+                if (preview) preview.innerHTML = 
+                    '<strong>📋 Ticket Thermique</strong><br/>' +
+                    '→ Largeur: 80mm<br/>' +
+                    '→ Marges minimales (5mm)<br/>' +
+                    '→ Police agrandie pour lisibilité<br/>' +
+                    '→ Idéal pour imprimante de caisse';
+            } else {
+                // Mise en évidence option A4
+                if (a4Opt) a4Opt.style.borderColor = '#3b82f6';
+                if (ticketOpt) ticketOpt.style.borderColor = '#e5e7eb';
+
+                // Texte aperçu
+                if (preview) preview.innerHTML = 
+                    '<strong>📄 Format A4</strong><br/>' +
+                    '→ Largeur: 210mm<br/>' +
+                    '→ Marges professionnelles (15mm)<br/>' +
+                    '→ Police standard et lisible<br/>' +
+                    '→ Idéal pour archivage et impression standard';
+            }
+
+            // Afficher l'aperçu
+            if (prevDiv) prevDiv.style.display = 'block';
+
+            // Activer le bouton continuer
+            if (btnConf) btnConf.style.display = 'block';
+        }
+
+        /**
+         * Confirme la sélection et lance la génération PDF
+         */
+        function confirmerSelectionFormat() {
+            if (!pendingPDFData) {
+                alert('Erreur: Données de PDF manquantes');
+                return;
+            }
+
+            // Générer le PDF avec le format sélectionné
+            genererPDF(pendingPDFData);
+
+            // Fermer le modal
+            fermerFormatModal();
+        }
         function regenererPDF(idx, type) {
             const h = historique[idx];
             genererPDF({
@@ -6043,7 +6140,7 @@
 
         function genererPDFVente(type) {
             if(!articlesVente.length) {
-                alert('Aucun article');
+                alert('Aucun article à imprimer');
                 return;
             }
             genererPDF({
@@ -6056,97 +6153,138 @@
                 articles: articlesVente,
                 total: articlesVente.reduce((s, a) => s + a.total, 0)
             });
+            ouvrirFormatModal(pdfData);
         }
-        
+           
         function genererPDF(data) {
             const { jsPDF } = window.jspdf;
-            
+
             const isBonLivraison = data.type === 'bon';
             let titreDoc = data.type === 'proforma' ? 'PROFORMA' : 
                         data.type === 'facture' ? 'FACTURE' : 'BON DE LIVRAISON';
-            
+
             const dateObj = new Date(data.date + 'T00:00:00');
             const dateFormatted = dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            
+
             let total = 0;
             const rows = data.articles.map(article => {
                 const amount = article.quantite * article.prix;
                 total += amount;
                 return `<tr><td>${article.produit}</td><td class="text-center">${article.unite}</td><td class="text-center">${article.quantite}</td><td class="text-right">${article.prix.toLocaleString()} Ar</td><td class="text-right">${amount.toLocaleString()} Ar</td></tr>`;
             }).join('');
-            
+
             const totalWords = numberToWords(total);
             const totalInWords = '» ' + totalWords.charAt(0).toUpperCase() + totalWords.slice(1) + ' Ariary"';
-            
-            const logoHtml = config.logo 
+
+            //  Configuration mise en page selon format
+            let layoutConfig = {
+                margeGauche: 15,
+                margeDroite: 15,
+                margeHaut: 10,
+                margeBas: 10,
+                polleTitre: 14,
+                policeCorps: 12,
+                logoVisible: true,
+                colonnesReduites: false
+            };
+
+            if (formatImpression === 'ticket') {
+                layoutConfig = {
+                    margeGauche: 5,
+                    margeDroite: 5,
+                    margeHaut: 5,
+                    margeBas: 5,
+                    polleTitre: 12,
+                    policeCorps: 9,
+                    logoVisible: false,
+                    colonnesReduites: true
+                };
+            }
+
+
+            const logoHtml = (layoutConfig.logoVisible && config.logo)
                 ? `<img src="${config.logo}" class="doc-logo" alt="Logo">` 
-                : `<div style="width: 200px; height: 90px; background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 36px;">miglio</div>`;
-            
+                : layoutConfig.logoVisible 
+                    ? `<div style="width: 200px; height: 90px; background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 36px;">miglio</div>`
+                    : '';  // Pas de logo pour ticket
+
             let tableHeader, tableRows, footerContent;
-            
+
             if (isBonLivraison) {
                 tableHeader = `<thead><tr><th>Description</th><th>Unité</th><th>Quantité</th></tr></thead>`;
                 tableRows = data.articles.map(article => `<tr><td>${article.produit}</td><td class="text-center">${article.unite}</td><td class="text-center">${article.quantite}</td></tr>`).join('');
-                footerContent = `<p style="margin-top: 15px;">Mode de paiement : <span style="color: #6b7280; font-style: italic;">${config.paiement || ''}</span></p>
-`;
+                footerContent = `<p style="margin-top: 15px;">Mode de paiement : <span style="color: #6b7280; font-style: italic;">${config.paiement || ''}</span></p>`;
             } else {
                 tableHeader = `<thead><tr><th>Description</th><th>Unité</th><th>Quantité</th><th>Prix U</th><th>Montant</th></tr></thead>`;
                 tableRows = rows + `<tr class="total-row"><td colspan="4" class="text-right">TOTAL</td><td class="text-right">${total.toLocaleString()} Ar</td></tr>`;
-                
-                // Correction: "Facture" ou "Proforma" selon type
+
                 const typeTexte = data.type === 'facture' ? 'Facture' : 'Proforma';
                 footerContent = `<p>Arrêter la présente ${typeTexte} à la somme de: <strong>${totalInWords}</strong></p><p style="margin-top: 15px;">Mode de paiement : <em style="color: #6b7280;">${config.paiement || ''}</em></p>`;
-
             }
 
-            
+            // ✨ NOUVEAU: Adapter conteneur au format
             document.getElementById("pdf-preview-container").innerHTML = `
-                <div class="doc-logo-section">
-                    <div>
-                        <div class="doc-logo-box">${logoHtml}</div>
-                        <div class="doc-number-badge">
-                            <p>${titreDoc}</p>
-                            <p>N° ${data.numero}</p>
+                <div style="width: ${layoutConfig.containerWidth}; font-size: ${layoutConfig.fontSize};">
+                    <div class="doc-logo-section">
+                        ${layoutConfig.logoVisible ? `<div>
+                            <div class="doc-logo-box">${logoHtml}</div>
+                            <div class="doc-number-badge">
+                                <p>${titreDoc}</p>
+                                <p>N° ${data.numero}</p>
+                            </div>
+                            <div class="doc-supplier-info">
+                                <p style="font-weight: 700; font-size: 10px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${config.activite || ''}</p>
+                                <p><strong>Adresse</strong> : ${config.adresse || ''}</p>
+                                <p><strong>NIF</strong> : ${config.nif || ''}</p>
+                                <p><strong>STAT</strong> : ${config.stat || ''}</p>
+                                <p><strong>RC</strong> : ${config.rc || ''}</p>
+                                <p style="font-weight: 700; font-size: 10px; margin-top: 8px;"><strong>Compte Bancaire N°</strong> : ${config.banque || ''}</p>
+                            </div>
+                        </div>` : ''}
+                        <div class="doc-client-box">
+                            <p><strong>Antananarivo le</strong> : ${dateFormatted}</p>
+                            <p><strong>${titreDoc} à </strong> : ${data.tiers || ''}</p>
+                            <p><strong>Adresse</strong> : ${data.adresse || ''}</p>
                         </div>
-                        <div class="doc-supplier-info">
-                            <p style="font-weight: 700; font-size: 10px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${config.activite || ''}</p>
-                            <p><strong>Adresse</strong> : ${config.adresse || ''}</p>
-                            <p><strong>NIF</strong> : ${config.nif || ''}</p>
-                            <p><strong>STAT</strong> : ${config.stat || ''}</p>
-                            <p><strong>RC</strong> : ${config.rc || ''}</p>
-                            <p style="font-weight: 700; font-size: 10px; margin-top: 8px;"><strong>Compte Bancaire N°</strong> : ${config.banque || ''}</p>
-                        </div>
-
-
                     </div>
-                    <div class="doc-client-box">
-                        <p><strong>Antananarivo le</strong> : ${dateFormatted}</p>
-                        <p><strong>${titreDoc} à</strong> : ${data.tiers || ''}</p>
-                        <p><strong>Adresse</strong> : ${data.adresse || ''}</p>
+                    <table class="doc-table">${tableHeader}<tbody>${tableRows}</tbody></table>
+                    <div class="doc-footer">${footerContent}
+                        <div class="signature-area">
+                            <p>Le responsable</p>
+                            <div style="margin-top: 12px; font-style: italic; color: #6b7280; font-size: 12px;">(Signature & Cachet)</div>
+                            <div style="margin-top: 50px; border-bottom: 2px solid #111827; width: 200px; margin-left: auto;"></div>
+                            <div style="margin-top: 8px; font-weight: 800; color: #111827; font-size: 14px;">${config.responsable || ''}</div>
+                        </div>
                     </div>
                 </div>
-                <table class="doc-table">${tableHeader}<tbody>${tableRows}</tbody></table>
-                <div class="doc-footer">${footerContent}<div class="signature-area">                                                        <p>Le responsable</p>
-                                                            <div style="margin-top: 12px; font-style: italic; color: #6b7280; font-size: 12px;">(Signature & Cachet)</div>
-                                                            <div style="margin-top: 50px; border-bottom: 2px solid #111827; width: 200px; margin-left: auto;"></div>
-                                                            <div style="margin-top: 8px; font-weight: 800; color: #111827; font-size: 14px;">${config.responsable || ''}</div>
-                                                        </div>
-
-    
-
             `;
-            
-            // Exporter en PDF
+
+            // ✨ MODIFIÉ: Exporter en PDF avec dimensions adaptées
             const element = document.getElementById("pdf-preview-container");
             html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }).then(canvas => {
                 const imgData = canvas.toDataURL("image/png");
-                const pdf = new jsPDF("p", "mm", "a4");
-                const imgWidth = 190;
+
+                // ✨ NOUVEAU: Adapter dimensions selon format
+                let pdfConfig;
+                let imgWidth;
+
+                if (formatImpression === 'ticket') {
+                    // Format ticket thermique: 80mm de largeur
+                    pdfConfig = ['p', 'mm', [80, 150]];
+                    imgWidth = 70;
+                } else {
+                    // Format A4 standard
+                    pdfConfig = ['p', 'mm', 'a4'];
+                    imgWidth = 190;
+                }
+
+                const pdf = new jsPDF(pdfConfig[0], pdfConfig[1], pdfConfig[2]);
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
                 pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
                 pdf.save(titreDoc.replace(/ /g, '_') + '_' + data.numero + '.pdf');
             });
         }
+
 
         function numberToWords(num) {
             if(num === 0) return 'zéro';
