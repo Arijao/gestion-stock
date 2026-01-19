@@ -1247,7 +1247,7 @@
         .todo-actions {
             margin-left: auto;
             display: flex;
-            gap: 12px;
+            gap: 4px;
         }
 
         .todo-btn {
@@ -1255,21 +1255,11 @@
             background: transparent;
             cursor: pointer;
             color: #9ca3af;
-            font-size: 14px;  /* Augmenté */
-            padding: 8px;  /* NOUVEAU: Zone tactile agrandie */
-            min-width: 36px;  /* NOUVEAU: Largeur minimale */
-            min-height: 28px;  /*  NOUVEAU: Hauteur minimale */
-            display: flex;  /* NOUVEAU: Pour centrer l'icône */
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;  /*  NOUVEAU: Coins arrondis */
-            transition: all 0.2s;  /* NOUVEAU: Animation douce */
+            font-size: 12px;
         }
-
 
         .todo-btn:hover {
             color: #111827;
-            background: #f3f4f6;
         }
         .dash-chart-wrap{ position:relative; height:260px; }
         #dash-chart{ width:100%; height:100%; display:block; }
@@ -2336,24 +2326,6 @@
             .tab {
                 font-size: 10px !important;
                 padding: 5px 8px !important;
-            }
-        }
-
-        /* Styles responsive pour to-do list mobile */
-        @media (max-width: 640px) {
-            .todo-actions {
-                gap: 16px;  /*  Encore plus d'espace sur mobile */
-            }
-            
-            .todo-btn {
-                min-width: 40px;  /* 40×40px pour mobile */
-                min-height: 40px;
-                padding: 10px;
-                font-size: 15px;
-            }
-            
-            .todo-item {
-                padding: 8px 0;  /* Plus d'espace vertical */
             }
         }
 
@@ -3616,7 +3588,59 @@
 
         
         //---- FIN -DASHBOARD -------//
-        function genererNumero(type) {
+        
+    /**
+     * Normalise un nom de produit pour garantir la cohérence
+     * - Supprime espaces début/fin
+     * - Remplace espaces multiples par un seul
+     * - Capitalise première lettre de chaque mot
+     */
+    function normaliserNomProduit(nom) {
+        if (!nom || typeof nom !== 'string') return '';
+
+        // Étape 1: Supprimer espaces début/fin
+        nom = nom.trim();
+
+        // Étape 2: Remplacer espaces multiples par un seul espace
+        nom = nom.replace(/\s+/g, ' ');
+
+        // Étape 3 (optionnel): Capitaliser première lettre de chaque mot
+        // Décommentez si vous voulez "Riz Blanc Premium" au lieu de "riz blanc premium"
+        // nom = nom.split(' ').map(mot => 
+        //     mot.charAt(0).toUpperCase() + mot.slice(1).toLowerCase()
+        // ).join(' ');
+
+        return nom;
+    }
+
+    /**
+     * Fonction de migration: Normalise tous les produits du stock existant
+     * À exécuter UNE SEULE FOIS après avoir ajouté normaliserNomProduit
+     */
+    function migrerStockExistant() {
+        const nouveauStock = {};
+
+        Object.keys(stock).forEach(nomProduit => {
+            const nomNormalise = normaliserNomProduit(nomProduit);
+
+            if (nouveauStock[nomNormalise]) {
+                // Fusionner les lots si le produit existe déjà
+                const lotsExistants = nouveauStock[nomNormalise].lots || [];
+                const nouveauxLots = stock[nomProduit].lots || [];
+                nouveauStock[nomNormalise].lots = [...lotsExistants, ...nouveauxLots];
+            } else {
+                // Créer nouvelle entrée
+                nouveauStock[nomNormalise] = stock[nomProduit];
+            }
+        });
+
+        stock = nouveauStock;
+        sauvegarderDonnees();
+        alert('Migration terminée! ' + Object.keys(stock).length + ' produits normalisés.');
+    }
+
+
+    function genererNumero(type) {
             const date = new Date();
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -3626,7 +3650,7 @@
         }
 
         function ajouterArticleAchat() {
-            const produit = document.getElementById('achat-produit').value.trim();
+            const produit = normaliserNomProduit(document.getElementById('achat-produit').value);
             const quantite = parseFloat(document.getElementById('achat-quantite').value);
             const prix = parseFloat(document.getElementById('achat-prix').value);
             const unite = document.getElementById('achat-unite').value;
@@ -3787,7 +3811,7 @@
         function rechercherProduitDynamique() {
             clearTimeout(suggestionsTimeout);
             suggestionsTimeout = setTimeout(() => {
-                const search = document.getElementById('vente-search').value.toLowerCase().trim();
+                const search = normaliserNomProduit(document.getElementById('vente-search').value).toLowerCase();
                 const suggestionsBox = document.getElementById('suggestions-box');
 
                 if(search.length < 2) {
@@ -3822,6 +3846,7 @@
 
 
         function selectionnerProduit(produit) {
+        produit = normaliserNomProduit(produit);
             document.getElementById('vente-search').value = produit;
             document.getElementById('vente-produit-selected').value = produit;
             document.getElementById('suggestions-box').style.display = 'none';
@@ -3909,7 +3934,7 @@
 
 
         function ajouterArticleVente() {
-            const produit = document.getElementById('vente-produit-selected').value;
+            const produit = normaliserNomProduit(document.getElementById('vente-produit-selected').value);
             const quantite = parseFloat(document.getElementById('vente-quantite').value);
             const prix = parseFloat(document.getElementById('vente-prix').value);
 
