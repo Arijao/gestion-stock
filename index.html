@@ -3609,7 +3609,7 @@
         // nom = nom.split(' ').map(mot => 
         //     mot.charAt(0).toUpperCase() + mot.slice(1).toLowerCase()
         // ).join(' ');
-
+        nom = nom.toLowerCase();
         return nom;
     }
 
@@ -3619,11 +3619,16 @@
      */
     function migrerStockExistant() {
         const nouveauStock = {};
+        let nbFusions = 0;
 
         Object.keys(stock).forEach(nomProduit => {
             const nomNormalise = normaliserNomProduit(nomProduit);
 
             if (nouveauStock[nomNormalise]) {
+                // Fusion détectée!
+                nbFusions++;
+                console.log(`🔄 Fusion: "${nomProduit}" → "${nomNormalise}"`);
+
                 // Fusionner les lots si le produit existe déjà
                 const lotsExistants = nouveauStock[nomNormalise].lots || [];
                 const nouveauxLots = stock[nomProduit].lots || [];
@@ -3636,7 +3641,20 @@
 
         stock = nouveauStock;
         sauvegarderDonnees();
-        alert('Migration terminée! ' + Object.keys(stock).length + ' produits normalisés.');
+
+        const message = `
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║              MIGRATION TERMINÉE AVEC SUCCÈS                   ║
+    ╚═══════════════════════════════════════════════════════════════╝
+
+    ${Object.keys(stock).length} produits normalisés
+    ${nbFusions} fusion(s) effectuée(s)
+
+    Tous vos produits sont maintenant uniformisés!
+        `;
+
+        console.log(message);
+        alert(`Migration terminée!\n${Object.keys(stock).length} produits normalisés\n${nbFusions} fusion(s) effectuée(s)`);
     }
 
 
