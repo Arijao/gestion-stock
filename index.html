@@ -5998,34 +5998,29 @@
 
 
 
-        function genererPDFDepuisHistorique(h, typeDoc){
-            if(h.type !== 'vente'){
+        function genererPDFDepuisHistorique(idx, typeDoc) {
+            const h = historique[idx];
+            
+            if (h.type !== 'vente') {
+                alert('Cette fonctionnalité est réservée aux ventes');
                 return;
             }
-
-            // Backup état actuel
-            const backupArticles = articlesVente.slice();
-            const clientBackup   = document.getElementById('vente-client').value;
-            const adrBackup      = document.getElementById('vente-adresse').value;
-            const numBackup      = document.getElementById('vente-numero').value;
-
-            // Ampidiro ao amin’ny “formulaire vente” vetivety ny données historique
-            articlesVente = h.articles.slice();
-            document.getElementById('vente-client').value  = h.tiers || '';
-            document.getElementById('vente-adresse').value = h.adresse || '';
-            if(h.numero){
-                document.getElementById('vente-numero').value = h.numero;
-            }
-
-            // Génération PDF (typeDoc = 'facture' | 'proforma' | 'bon')
-            genererPDFVente(typeDoc);
-
-            // Averina amin’ny état taloha
-            articlesVente = backupArticles;
-            document.getElementById('vente-client').value  = clientBackup;
-            document.getElementById('vente-adresse').value = adrBackup;
-            document.getElementById('vente-numero').value  = numBackup;
+            
+            // ✨ CRÉER pdfData depuis l'historique
+            const pdfData = {
+                type: typeDoc,
+                operation: 'vente',
+                date: h.date,
+                numero: h.numero,
+                tiers: h.tiers,
+                adresse: h.adresse || '',
+                articles: h.articles,
+                total: h.total
+            };
+            
+            ouvrirFormatModal(pdfData);
         }
+
 
         function ouvrirFormatModal(pdfData) {
             pendingPDFData = pdfData;
@@ -6052,6 +6047,68 @@
             }
         }
 
+        function creerFormatModal() {
+            const modal = document.createElement('div');
+            modal.id = 'format-modal';
+            modal.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    text-align: center;
+                ">
+                    <h2>Sélectionner le format d'impression</h2>
+                    <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center;">
+                        <button onclick="selectionnerFormat('a4')" style="
+                            padding: 10px 20px;
+                            background: #3b82f6;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 16px;
+                        ">📄 A4</button>
+
+                        <button onclick="selectionnerFormat('ticket')" style="
+                            padding: 10px 20px;
+                            background: #10b981;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 16px;
+                        ">🎫 Ticket 80mm</button>
+
+                        <button onclick="fermerFormatModal()" style="
+                            padding: 10px 20px;
+                            background: #6b7280;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 16px;
+                        ">✕ Annuler</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            return modal;
+        }
         /**
          * Ferme le modal de sélection du format
          */
@@ -6139,11 +6196,13 @@
         }
 
         function genererPDFVente(type) {
-            if(!articlesVente.length) {
+            if (!articlesVente.length) {
                 alert('Aucun article à imprimer');
                 return;
             }
-            genererPDF({
+
+            // Ouvrir le modal pour choisir le format
+            ouvrirFormatModal({
                 type: type,
                 operation: 'vente',
                 date: document.getElementById('vente-date').value,
@@ -6153,7 +6212,6 @@
                 articles: articlesVente,
                 total: articlesVente.reduce((s, a) => s + a.total, 0)
             });
-            ouvrirFormatModal(pdfData);
         }
            
         function genererPDF(data) {
