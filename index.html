@@ -4501,13 +4501,13 @@
                         <td onclick="event.stopPropagation()">
                             <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
                                 ${h.type === 'vente' ? `
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"facture")' title="Facture">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'facture')" title="Facture">
                                         <i class="fa-solid fa-file-invoice"></i>
                                     </button>
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"proforma")' title="Proforma">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'proforma')" title="Proforma">
                                         <i class="fa-solid fa-file-lines"></i>
                                     </button>
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"bon")' title="BL">
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(originalIdx,'bon')" title="BL">
                                         <i class="fa-solid fa-truck-fast"></i>
                                     </button>
                                 ` : ''}
@@ -7536,10 +7536,10 @@
                 
                 ${h.type === 'vente' ? `
                     <div style="display: flex; gap: 8px; margin-top: 16px;">
-                    <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')" style="flex: 1;">
+                    <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(originalIdx, 'facture')" style="flex: 1;">
                         <i class="fa-solid fa-file-invoice"></i> Facture
                     </button>
-                    <button class="btn btn-info" onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')" style="flex: 1;">
+                    <button class="btn btn-info" onclick="genererPDFDepuisHistorique(originalIdx, 'bon')" style="flex: 1;">
                         <i class="fa-solid fa-truck"></i> Bon livraison
                     </button>
                     </div>
