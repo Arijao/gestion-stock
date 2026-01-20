@@ -4694,8 +4694,59 @@
             afficherHistorique();
         }
 
+        // ========== FONCTION MANQUANTE : Debounce ==========
+        let searchTimeout;
+        function rechercherHistoriqueDebounced() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                rechercherHistorique();
+            }, 300);
+        }
+
         function filtrerHistorique() {
             historiqueTypeFilter = document.getElementById('filter-type').value;
+            historiquePage = 1;
+            afficherHistorique();
+        }
+
+        // ========== FONCTIONS MANQUANTES : Filtres rapides ==========
+        function appliquerFiltreRapide(type) {
+            const searchInput = document.getElementById('search-historique');
+
+            switch(type) {
+                case 'impayé':
+                    historiqueTypeFilter = 'vente';
+                    document.getElementById('filter-type').value = 'vente';
+                    historiqueSearchQuery = 'impayé';
+                    searchInput.value = 'impayé';
+                    break;
+                case 'payé':
+                    historiqueTypeFilter = 'vente';
+                    document.getElementById('filter-type').value = 'vente';
+                    historiqueSearchQuery = 'payé';
+                    searchInput.value = 'payé';
+                    break;
+                case 'aujourdhui':
+                    const today = new Date().toISOString().slice(0, 10);
+                    historiqueSearchQuery = today;
+                    searchInput.value = today;
+                    break;
+                case 'semaine':
+                    const week = new Date();
+                    week.setDate(week.getDate() - 7);
+                    historiqueSearchQuery = week.toISOString().slice(0, 7);
+                    searchInput.value = historiqueSearchQuery;
+                    break;
+            }
+
+            rechercherHistorique();
+        }
+
+        function effacerFiltres() {
+            historiqueSearchQuery = '';
+            historiqueTypeFilter = 'tous';
+            document.getElementById('search-historique').value = '';
+            document.getElementById('filter-type').value = 'tous';
             historiquePage = 1;
             afficherHistorique();
         }
