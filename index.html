@@ -4620,19 +4620,24 @@
                         ).join(' ').toLowerCase();
                     }
 
-                    // 3. Recherche dans le STATUT DE PAIEMENT
+                    // 3. Recherche dans le STATUT DE PAIEMENT - CORRIGÉ!
                     let searchStatut = '';
                     if (h.type === 'vente') {
                         const resteAPayer = h.total - (h.montantPaye || 0);
 
+                        // Utiliser des mots-clés UNIQUES pour éviter les collisions
                         if (h.statutPaiement === 'payé' || resteAPayer === 0) {
-                            searchStatut = 'payé paye payée payee reglé regle soldé solde';
+                            // PAYÉ: mots-clés qui ne contiennent pas "impayé"
+                            searchStatut = 'statut_payé statut_paye reglé regle soldé solde complet termine';
                         } else if (h.statutPaiement === 'partiel' && resteAPayer > 0) {
-                            searchStatut = 'partiel partiellement partielle';
+                            // PARTIEL: mots-clés uniques
+                            searchStatut = 'statut_partiel partiellement partielle acompte';
                         } else {
-                            searchStatut = 'impayé impaye impayée impayee non payé nonpayé à payer apayer en attente';
+                            // IMPAYÉ: mots-clés avec préfixes
+                            searchStatut = 'statut_impayé statut_impaye non_payé non_paye en_attente attente dû restant';
                         }
 
+                        // Ajouter le moyen de paiement
                         if (h.moyenPaiement) {
                             searchStatut += ' ' + h.moyenPaiement.toLowerCase();
                         }
@@ -4644,6 +4649,23 @@
                     // 5. COMBINER toutes les recherches
                     const allSearchableText = searchBase + ' ' + searchProduits + ' ' + searchStatut + ' ' + searchDate;
 
+                    // LOGIQUE DE RECHERCHE AMÉLIORÉE
+                    // Si la requête est exactement "payé" ou "paye", chercher uniquement les payés
+                    if (query === 'payé' || query === 'paye' || query === 'payée' || query === 'payee') {
+                        return allSearchableText.includes('statut_payé') || allSearchableText.includes('statut_paye');
+                    }
+
+                    // Si la requête est exactement "impayé" ou "impaye", chercher uniquement les impayés
+                    if (query === 'impayé' || query === 'impaye' || query === 'impayée' || query === 'impayee') {
+                        return allSearchableText.includes('statut_impayé') || allSearchableText.includes('statut_impaye');
+                    }
+
+                    // Si la requête est "partiel", chercher uniquement les partiels
+                    if (query === 'partiel' || query === 'partielle' || query === 'partiellement') {
+                        return allSearchableText.includes('statut_partiel');
+                    }
+
+                    // Pour toutes les autres recherches, recherche normale
                     return allSearchableText.includes(query);
                 });
             }
