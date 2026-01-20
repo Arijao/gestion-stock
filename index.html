@@ -3676,7 +3676,14 @@
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
  
-
+        // Variables de configuration entreprise
+        let nomEntreprise = "Mon Entreprise";
+        let adresseEntreprise = "123 Rue Example, Ville";
+        let telEntreprise = "+261 34 00 000 00";
+        let emailEntreprise = "contact@monentreprise.mg";
+        let nifEntreprise = "123456789";
+        let statEntreprise = "987654321";
+        let appLogoData = null; // Sera rempli si l'utilisateur upload un logo
 
         // Window onload
         window.onload = async function() {
@@ -5522,6 +5529,132 @@
             }, 100);
         }
 
+        // ========== GÉNÉRATION PDF FORMAT TICKET THERMIQUE ==========
+
+        function genererPDFTicket(type, data) {
+            const container = document.getElementById('pdf-preview-ticket');
+            
+            // Déterminer le titre selon le type
+            let titre = 'FACTURE';
+            if (type === 'proforma') titre = 'PROFORMA';
+            if (type === 'bon') titre = 'BON LIVRAISON';
+            
+            // Calculer la date d'échéance
+            const dateFacture = new Date(data.date);
+            const delaiJours = parseInt(data.delai) || 30;
+            const dateEcheance = new Date(dateFacture);
+            dateEcheance.setDate(dateEcheance.getDate() + delaiJours);
+            
+            // Construire le HTML pour ticket thermique (80mm)
+            let html = `
+                <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #000; line-height: 1.4;">
+                    
+                    <!-- En-tête centré -->
+                    <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+                        ${appLogoData ? `<img src="${appLogoData}" style="width: 120px; height: auto; margin-bottom: 8px;">` : `<div style="font-size: 16px; font-weight: 700; margin-bottom: 5px;">${nomEntreprise}</div>`}
+                        
+                        <div style="font-size: 9px; margin-top: 5px;">
+                            ${adresseEntreprise}<br>
+                            Tel: ${telEntreprise}<br>
+                            ${emailEntreprise}
+                            ${nifEntreprise ? `<br>NIF: ${nifEntreprise}` : ''}
+                            ${statEntreprise ? `<br>STAT: ${statEntreprise}` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Type de document -->
+                    <div style="text-align: center; font-size: 14px; font-weight: 700; margin: 10px 0; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0;">
+                        ${titre}
+                    </div>
+                    
+                    <!-- Infos document -->
+                    <div style="font-size: 9px; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+                        <div style="margin: 3px 0;">N°: ${data.numero}</div>
+                        <div style="margin: 3px 0;">Date: ${formatDate(data.date)}</div>
+                        ${type !== 'bon' ? `<div style="margin: 3px 0;">Echeance: ${formatDate(dateEcheance.toISOString().split('T')[0])}</div>` : ''}
+                    </div>
+                    
+                    <!-- Infos client -->
+                    <div style="font-size: 9px; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+                        <div style="font-weight: 700; margin-bottom: 3px;">CLIENT:</div>
+                        <div style="margin: 2px 0;">${data.client}</div>
+                        <div style="margin: 2px 0;">${data.adresse}</div>
+                    </div>
+                    
+                    <!-- Articles -->
+                    <div style="border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+            `;
+            
+            // Ajouter chaque article
+            data.articles.forEach((article) => {
+                html += `
+                        <div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                            <div style="font-weight: 700; margin-bottom: 2px;">${article.produit}</div>
+                            <div style="display: flex; justify-content: space-between; font-size: 9px;">
+                                <span>${article.quantite} ${article.unite} x ${formatNumber(article.prix)} Ar</span>
+                                <span style="font-weight: 700;">${formatNumber(article.quantite * article.prix)} Ar</span>
+                            </div>
+                        </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    
+                    <!-- Total -->
+                    <div style="font-size: 12px; font-weight: 700; text-align: right; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0; margin-bottom: 10px;">
+                        TOTAL: ${formatNumber(data.total)} Ar
+                    </div>
+                    
+                    <!-- Pied de page -->
+                    <div style="font-size: 8px; text-align: center; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 8px;">
+                        ${type !== 'bon' ? `<div style="margin: 3px 0;">Delai: ${data.delai} jours</div>` : ''}
+                        <div style="margin: 3px 0;">Merci de votre visite!</div>
+                        <div style="margin: 5px 0;">www.votresite.com</div>
+                    </div>
+                    
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Générer le PDF avec html2canvas + jsPDF (format ticket 80mm)
+            setTimeout(() => {
+                html2canvas(container, {
+                    scale: 3, // Plus haute résolution pour ticket
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    const { jsPDF } = window.jspdf;
+                    // Format ticket: 80mm de largeur, hauteur auto
+                    const ticketWidth = 80; // mm
+                    const imgWidth = ticketWidth;
+                    const imgHeight = (canvas.height * ticketWidth) / canvas.width;
+                    
+                    const pdf = new jsPDF('p', 'mm', [ticketWidth, imgHeight]);
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                    pdf.save(`Ticket_${titre.replace(/ /g, '_')}_${data.numero}.pdf`);
+                });
+            }, 100);
+        }
+
+        // ========== FONCTIONS UTILITAIRES ==========
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
         async function ouvrirFactureHistorique(h) {
             const p = h.pieces?.[0];
             if (!p?.fileKey) {
