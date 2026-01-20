@@ -4627,7 +4627,6 @@
                         </td>
                     </tr>
                 `;
-                afficherBadgeResultats(0);
                 return;
             }
 
@@ -4648,41 +4647,24 @@
                     }
                 }
 
-                // Surligner le terme recherché
-                let displayTiers = h.tiers || '-';
-                let displayNumero = h.numero || '-';
-
-                if (historiqueSearchQuery) {
-                    const regex = new RegExp(`(${escapeRegex(historiqueSearchQuery)})`, 'gi');
-                    displayTiers = displayTiers.replace(regex, '<mark>$1</mark>');
-                    displayNumero = displayNumero.replace(regex, '<mark>$1</mark>');
-                }
-
                 tbody.innerHTML += `
-                    <tr>
+                    <tr onclick="ouvrirDetailVente(${originalIdx})" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''">
                         <td>${h.date}</td>
-                        <td><strong style="color:${h.type === 'achat' ? '#dc2626' : '#16a34a'}">${h.type.toUpperCase()}</strong></td>
-                        <td>${displayNumero}</td>
-                        <td>${displayTiers}${badgePaiement}</td>
-                        <td style="text-align:right"><strong>${h.total.toLocaleString()} Ar</strong></td>
-                        <td>
-                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                <button class="btn-compact btn-compact-dark" onclick="voirDetail(historique[${originalIdx}])" title="Voir détails">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>
-                                ${h.type === 'vente' && h.statutPaiement !== 'payé' ? `
-                                    <button class="btn-compact btn-compact-success" onclick="marquerPaye(${originalIdx})" title="Marquer comme payé">
-                                        <i class="fa-solid fa-check"></i> Payé
+                        <td><strong style="color:${h.type === 'achat' ? '#dc2626' : '#16a34a'}">${h.type === 'achat' ? '<i class="fa-solid fa-cart-shopping"></i> Achat' : '<i class="fa-solid fa-receipt"></i> Vente'}${badgePaiement}</strong></td>
+                        <td>${h.numero || '-'}</td>
+                        <td>${h.tiers}</td>
+                        <td style="font-weight:600; text-align:right">${h.total.toLocaleString()} Ar</td>
+                        <td onclick="event.stopPropagation()">
+                            <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+                                ${h.type === 'vente' ? `
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'facture')" title="Facture">
+                                        <i class="fa-solid fa-file-invoice"></i>
                                     </button>
-                                ` : ''}
-                                ${h.type === 'vente' && h.statutPaiement === 'payé' ? `
-                                    <button class="btn-compact btn-compact-gray" onclick="annulerPaiement(${originalIdx})" title="Annuler paiement">
-                                        <i class="fa-solid fa-times"></i>
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'proforma')" title="Proforma">
+                                        <i class="fa-solid fa-file-lines"></i>
                                     </button>
-                                ` : ''}
-                                ${h.pieces && h.pieces.length > 0 && h.pieces[0].fileKey ? `
-                                    <button class="btn-compact btn-compact-dark" onclick="ouvrirFactureHistoriqueSafe(historique[${originalIdx}])" title="Ouvrir facture PDF">
-                                        <i class="fa-solid fa-file-pdf"></i> PDF
+                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'bon')" title="BL">
+                                        <i class="fa-solid fa-truck-fast"></i>
                                     </button>
                                 ` : ''}
                             </div>
@@ -4693,31 +4675,6 @@
 
             // Créer pagination
             createPagination('historique-pagination', historiquePage, totalItems, historiquePerPage, goToHistoriquePage, changeHistoriquePerPage);
-
-            // Afficher badge de résultats
-            afficherBadgeResultats(totalItems);
-        }
-
-        // Fonction helper pour échapper les caractères spéciaux regex
-        function escapeRegex(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        // Afficher le badge avec le nombre de résultats
-        function afficherBadgeResultats(count) {
-            const searchBox = document.querySelector('#historique-tab .search-box');
-            if (!searchBox) return;
-
-            // Supprimer ancien badge s'il existe
-            const oldBadge = searchBox.querySelector('.result-badge');
-            if (oldBadge) oldBadge.remove();
-
-            if (historiqueSearchQuery || historiqueTypeFilter !== 'tous') {
-                const badge = document.createElement('div');
-                badge.className = 'result-badge';
-                badge.innerHTML = `<i class="fa-solid fa-filter"></i> ${count} résultat${count > 1 ? 's' : ''} trouvé${count > 1 ? 's' : ''}`;
-                searchBox.appendChild(badge);
-            }
         }
 
         function goToHistoriquePage(page) {
@@ -4731,126 +4688,157 @@
             afficherHistorique();
         }
 
-        // ============================================================================
-        // FONCTIONS BONUS: Filtres rapides et Export
-        // ============================================================================
-
-        // Debounce pour optimiser la recherche
-        let searchTimeout;
-        function rechercherHistoriqueDebounced() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                rechercherHistorique();
-            }, 300); // Attendre 300ms après la dernière frappe
-        }
-
-        // Filtres rapides
-        function appliquerFiltreRapide(type) {
-            const searchInput = document.getElementById('search-historique');
-
-            switch(type) {
-                case 'impayé':
-                    historiqueTypeFilter = 'vente';
-                    document.getElementById('filter-type').value = 'vente';
-                    historiqueSearchQuery = 'impayé';
-                    searchInput.value = 'impayé';
-                    break;
-                case 'payé':
-                    historiqueTypeFilter = 'vente';
-                    document.getElementById('filter-type').value = 'vente';
-                    historiqueSearchQuery = 'payé';
-                    searchInput.value = 'payé';
-                    break;
-                case 'aujourdhui':
-                    const today = new Date().toISOString().slice(0, 10);
-                    historiqueSearchQuery = today;
-                    searchInput.value = today;
-                    break;
-                case 'semaine':
-                    const week = new Date();
-                    week.setDate(week.getDate() - 7);
-                    historiqueSearchQuery = week.toISOString().slice(0, 7); // Format YYYY-MM
-                    searchInput.value = historiqueSearchQuery;
-                    break;
-            }
-
-            rechercherHistorique();
-        }
-
-        // Effacer tous les filtres
-        function effacerFiltres() {
-            historiqueSearchQuery = '';
-            historiqueTypeFilter = 'tous';
-            document.getElementById('search-historique').value = '';
-            document.getElementById('filter-type').value = 'tous';
+        function rechercherHistorique() {
+            historiqueSearchQuery = document.getElementById('search-historique').value.toLowerCase();
             historiquePage = 1;
             afficherHistorique();
         }
 
-        // Export des résultats filtrés en CSV
-        function exporterResultatsRecherche() {
-            // Récupérer les résultats filtrés
-            let items = historique.slice().reverse();
+        function filtrerHistorique() {
+            historiqueTypeFilter = document.getElementById('filter-type').value;
+            historiquePage = 1;
+            afficherHistorique();
+        }
 
-            // Appliquer recherche
-            if (historiqueSearchQuery) {
-                items = items.filter(h => {
-                    const query = historiqueSearchQuery.toLowerCase();
-                    const searchStandard = [h.date, h.type, h.numero || '', h.tiers || '', h.total.toString()].join(' ').toLowerCase();
-                    let searchArticles = '';
-                    if (h.articles && h.articles.length > 0) {
-                        searchArticles = h.articles.map(a => (a.produit || '')).join(' ').toLowerCase();
-                    }
-                    const searchExtra = [h.adresse || '', h.notes || '', h.statutPaiement || ''].join(' ').toLowerCase();
-                    const allText = searchStandard + ' ' + searchArticles + ' ' + searchExtra;
-                    return allText.includes(query);
+        // ========== FONCTION POUR OUVRIR LE MODAL AVEC DÉTAILS ==========
+        function ouvrirDetailVente(idx) {
+            const h = historique[idx];
+
+            if (h.type === 'achat') {
+                // Modal Achat existant
+                document.getElementById('achat-modal-info').textContent = `Date: ${h.date} | Fournisseur: ${h.tiers}`;
+                const tbody = document.getElementById('achat-modal-tbody');
+                tbody.innerHTML = '';
+
+                h.articles.forEach(a => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${a.produit}</td>
+                            <td>${a.quantite}</td>
+                            <td>${a.unite}</td>
+                            <td>${a.prix.toLocaleString()} Ar</td>
+                            <td>${a.total.toLocaleString()} Ar</td>
+                        </tr>
+                    `;
                 });
+
+                document.getElementById('achat-modal-total').textContent = h.total.toLocaleString() + ' Ar';
+                document.getElementById('achat-modal').style.display = 'flex';
+
+            } else if (h.type === 'vente') {
+                // Modal Vente avec paiement
+                ouvrirModalVente(idx);
             }
+        }
 
-            // Appliquer filtre type
-            if (historiqueTypeFilter !== 'tous') {
-                items = items.filter(h => h.type === historiqueTypeFilter);
-            }
+        function ouvrirModalVente(idx) {
+            const h = historique[idx];
 
-            if (items.length === 0) {
-                alert('Aucun résultat à exporter');
-                return;
-            }
+            const modalHTML = `
+                <div class="modal-overlay" id="vente-modal" style="display:flex;">
+                    <div class="modal" style="max-width: 700px;">
+                        <div class="modal-header">
+                            <h3>💰 Détail Vente - ${h.numero}</h3>
+                            <button class="modal-close" onclick="fermerModalVente()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="modal-info">Date: ${h.date} | Client: ${h.tiers} | Adresse: ${h.adresse || 'N/A'}</p>
 
-            // Créer CSV
-            let csv = 'Date,Type,Numéro,Tiers,Total (Ar),Produits,Quantités,Statut\n';
-            items.forEach(h => {
-                const produits = h.articles ? h.articles.map(a => a.produit).join('; ') : '-';
-                const quantites = h.articles ? h.articles.map(a => `${a.quantite} ${a.unite}`).join('; ') : '-';
-                const statut = h.statutPaiement || '-';
-                csv += `"${h.date}","${h.type}","${h.numero || '-'}","${h.tiers || '-'}","${h.total}","${produits}","${quantites}","${statut}"\n`;
-            });
+                            <table class="modal-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produit</th>
+                                        <th>Qté</th>
+                                        <th>Unit</th>
+                                        <th>P.U</th>
+                                        <th>Montant</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${h.articles.map(a => `
+                                        <tr>
+                                            <td>${a.produit}</td>
+                                            <td>${a.quantite}</td>
+                                            <td>${a.unite}</td>
+                                            <td>${a.prix.toLocaleString()} Ar</td>
+                                            <td>${a.total.toLocaleString()} Ar</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="4" style="text-align:right;font-weight:600">Total</td>
+                                        <td>${h.total.toLocaleString()} Ar</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
 
-            // Télécharger
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `historique_${new Date().toISOString().slice(0,10)}.csv`;
-            link.click();
+                            ${h.statutPaiement !== 'payé' ? `
+                                <div style="background:#fef3c7; padding:12px; border-radius:8px; margin-top:16px; border-left:4px solid #f59e0b;">
+                                    <strong>💳 Informations paiement</strong><br>
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
+                                        <div>Montant total: <strong>${h.total.toLocaleString()} Ar</strong></div>
+                                        <div>Échéance: <strong>${h.dateLimite || 'N/A'}</strong></div>
+                                        <div>Déjà payé: <strong style="color:#16a34a;">${(h.montantPaye || 0).toLocaleString()} Ar</strong></div>
+                                        <div>Reste: <strong style="color:#dc2626;">${(h.total - (h.montantPaye || 0)).toLocaleString()} Ar</strong></div>
+                                    </div>
+                                    <p style="margin-top:10px; font-size:12px; color:#92400e;">Aucun paiement enregistré.</p>
 
-            alert(`✅ ${items.length} transaction(s) exportée(s) avec succès!`);
+                                    <button class="btn btn-success" onclick="marquerPaye(${idx}); fermerModalVente();" style="margin-top:12px; width:100%;">
+                                        ✓ Enregistrer un paiement
+                                    </button>
+                                </div>
+                            ` : `
+                                <div style="background:#dcfce7; padding:12px; border-radius:8px; margin-top:16px; border-left:4px solid #16a34a;">
+                                    <strong style="color:#166534;">✓ Vente payée</strong><br>
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; color:#166534;">
+                                        <div>Date paiement: <strong>${h.datePayement || 'N/A'}</strong></div>
+                                        <div>Mode: <strong>${h.moyenPaiement || 'N/A'}</strong></div>
+                                        <div>Montant: <strong>${(h.montantPaye || 0).toLocaleString()} Ar</strong></div>
+                                    </div>
+                                </div>
+                            `}
+
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:16px;">
+                                <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(historique[${idx}],'facture')">
+                                    📄 Facture
+                                </button>
+                                <button class="btn btn-info" onclick="genererPDFDepuisHistorique(historique[${idx}],'bon')">
+                                    🚚 Bon livraison
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Supprimer ancien modal s'il existe
+            const oldModal = document.getElementById('vente-modal');
+            if (oldModal) oldModal.remove();
+
+            // Insérer le nouveau modal
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function fermerModalVente() {
+            const modal = document.getElementById('vente-modal');
+            if (modal) modal.remove();
         }
 
         // ========== GESTION PAIEMENT - Marquer Payé ==========
-
         function marquerPaye(idx) {
             const h = historique[idx];
-            
+
             if(h.type !== 'vente') {
                 alert('Erreur: Ce n\'est pas une vente');
                 return;
             }
-            
+
             if(h.statutPaiement === 'payé') {
                 alert('Cette vente est déjà marquée comme payée');
                 return;
             }
-            
+
             // Confirmation
             const montant = h.total - (h.montantPaye || 0);
             const confirmer = confirm(
@@ -4860,14 +4848,14 @@
                 `Montant: ${montant.toLocaleString()} Ar\n` +
                 `Date: ${h.date}`
             );
-            
+
             if(!confirmer) return;
-            
-            // ✅ CRÉER MODAL POUR CHOIX MODE PAIEMENT
+
+            // Créer modal pour choix mode paiement
             const modalHTML = `
                 <div style="padding: 20px;">
                     <h3 style="margin-bottom: 15px; color: #111827;">Mode de paiement</h3>
-                    
+
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Choisissez le mode de paiement:</label>
                         <select id="moyen-paiement-select" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px;">
@@ -4878,31 +4866,31 @@
                             <option value="Autre">Autre</option>
                         </select>
                     </div>
-                    
+
                     <div id="autre-moyen-wrap" style="display: none; margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: 600;">Précisez:</label>
                         <input type="text" id="autre-moyen-input" placeholder="Ex: Carte bancaire..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px;">
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button onclick="confirmerPaiement(${idx})" class="btn btn-success" style="flex: 1;">✓ Confirmer</button>
                         <button onclick="annulerModalPaiement()" class="btn" style="flex: 1;">Annuler</button>
                     </div>
                 </div>
             `;
-            
+
             // Créer le modal
             const modal = document.createElement('div');
             modal.id = 'modal-paiement';
             modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-            
+
             const modalContent = document.createElement('div');
             modalContent.style.cssText = 'background: white; border-radius: 15px; max-width: 400px; width: 90%;';
             modalContent.innerHTML = modalHTML;
-            
+
             modal.appendChild(modalContent);
             document.body.appendChild(modal);
-            
+
             // Afficher input si "Autre" sélectionné
             const selectEl = document.getElementById('moyen-paiement-select');
             const autreWrap = document.getElementById('autre-moyen-wrap');
@@ -4911,11 +4899,10 @@
             });
         }
 
-        // ✅ FONCTION POUR CONFIRMER LE PAIEMENT
         function confirmerPaiement(idx) {
             const selectEl = document.getElementById('moyen-paiement-select');
             let moyen = selectEl.value;
-            
+
             if(moyen === 'Autre') {
                 const autreInput = document.getElementById('autre-moyen-input');
                 moyen = autreInput.value.trim();
@@ -4924,73 +4911,61 @@
                     return;
                 }
             }
-            
+
             const h = historique[idx];
-            
+
             // Mise à jour
             h.statutPaiement = 'payé';
             h.datePayement = new Date().toISOString().split('T')[0];
             h.montantPaye = h.total;
             h.moyenPaiement = moyen;
-            
+
             // Sauvegarde
             sauvegarderDonnees();
             afficherHistorique();
             updateDashboard();
             updateNotificationBadge();
-            
+
             // Fermer modal
             annulerModalPaiement();
-            
+
             alert(`✓ Vente marquée comme payée par ${moyen}!`);
         }
 
-        // ✅ FONCTION POUR FERMER LE MODAL
         function annulerModalPaiement() {
             const modal = document.getElementById('modal-paiement');
             if(modal) modal.remove();
         }
 
-
         function annulerPaiement(idx) {
             const h = historique[idx];
-            
+
             if(h.type !== 'vente') return;
-            
+
             const confirmer = confirm(
                 `Annuler le paiement de cette vente?\n\n` +
                 `Numéro: ${h.numero}\n` +
                 `Client: ${h.tiers}`
             );
-            
+
             if(!confirmer) return;
-            
+
             h.statutPaiement = 'impayé';
             h.datePayement = null;
             h.montantPaye = 0;
             h.moyenPaiement = null;
-            
+
             sauvegarderDonnees();
             afficherHistorique();
             updateDashboard();
             updateNotificationBadge();
-            
+
             alert('✓ Paiement annulé');
         }
 
-
-        function rechercherHistorique() {
-            historiqueSearchQuery = document.getElementById('search-historique').value.toLowerCase();
-            historiquePage = 1;          // miverina amin’ny page 1
-            afficherHistorique();        // mi‑render indray miaraka amin’ny pagination
+        function fermerAchatModal() {
+            document.getElementById('achat-modal').style.display = 'none';
         }
-
-        function filtrerHistorique() {
-            historiqueTypeFilter = document.getElementById('filter-type').value;
-            historiquePage = 1;          // miverina amin’ny page 1
-            afficherHistorique();
-        }
-
 
         function voirDetail(h) {
             let msg = `Type: ${h.type}\nDate: ${h.date}\nTiers: ${h.tiers}\nTotal: ${h.total.toLocaleString()} Ar\n`;
@@ -5008,6 +4983,7 @@
 
             alert(msg);
         }
+
 
 
         async function ouvrirFactureHistorique(h) {
