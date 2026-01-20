@@ -4551,6 +4551,40 @@
             afficherStock();
         }
 
+        function normaliserDate(dateStr) {
+            if (!dateStr) return '';
+            
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr.toLowerCase();
+            
+            const jour = d.getDate();
+            const mois = d.getMonth() + 1;
+            const annee = d.getFullYear();
+            
+            const moisNoms = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 
+                            'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+            const moisNomsComplets = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                                    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+            
+            const moisCourt = moisNoms[mois - 1];
+            const moisComplet = moisNomsComplets[mois - 1];
+            
+            return [
+                dateStr,
+                `${jour}/${mois}/${annee}`,
+                `${String(jour).padStart(2,'0')}/${String(mois).padStart(2,'0')}/${annee}`,
+                `${jour} ${moisCourt}`,
+                `${jour} ${moisCourt} ${annee}`,
+                `${jour} ${moisComplet}`,
+                `${jour} ${moisComplet} ${annee}`,
+                String(jour),
+                String(mois),
+                String(annee),
+                moisCourt,
+                moisComplet
+            ].join(' ').toLowerCase();
+        }
+
         // ============================================================================
         // FONCTION AMÉLIORÉE: afficherHistorique() avec recherche intelligente
         // ============================================================================
@@ -4558,48 +4592,58 @@
             const tbody = document.getElementById('historique-tbody');
             tbody.innerHTML = '';
 
-            // Appliquer filtres
             let allItems = historique.slice().reverse();
 
-            // *** RECHERCHE INTELLIGENTE AMÉLIORÉE ***
+            // RECHERCHE ULTRA INTELLIGENTE
             if (historiqueSearchQuery) {
                 allItems = allItems.filter(h => {
-                    const query = historiqueSearchQuery.toLowerCase();
+                    const query = historiqueSearchQuery.toLowerCase().trim();
 
-                    // 1. Recherche dans les champs standards
-                    const searchStandard = [
-                        h.date,
-                        h.type,
+                    // 1. Champs de base
+                    const searchBase = [
+                        h.type || '',
                         h.numero || '',
                         h.tiers || '',
-                        h.total.toString()
+                        h.total.toString(),
+                        h.adresse || '',
+                        h.notes || ''
                     ].join(' ').toLowerCase();
 
-                    // 2. Recherche dans les articles (NOUVEAU!)
-                    let searchArticles = '';
+                    // 2. Recherche dans les PRODUITS
+                    let searchProduits = '';
                     if (h.articles && h.articles.length > 0) {
-                        searchArticles = h.articles.map(a => {
-                            return [
-                                a.produit || '',
-                                a.quantite.toString(),
-                                a.unite || '',
-                                a.prix.toString()
-                            ].join(' ');
-                        }).join(' ').toLowerCase();
+                        searchProduits = h.articles.map(a => 
+                            (a.produit || '') + ' ' + 
+                            (a.quantite || '') + ' ' + 
+                            (a.unite || '') + ' ' + 
+                            (a.prix || '')
+                        ).join(' ').toLowerCase();
                     }
 
-                    // 3. Recherche dans les informations complémentaires
-                    const searchExtra = [
-                        h.adresse || '',
-                        h.notes || '',
-                        h.statutPaiement || '',
-                        h.moyenPaiement || ''
-                    ].join(' ').toLowerCase();
+                    // 3. Recherche dans le STATUT DE PAIEMENT
+                    let searchStatut = '';
+                    if (h.type === 'vente') {
+                        const resteAPayer = h.total - (h.montantPaye || 0);
 
-                    // Combiner toutes les recherches
-                    const allSearchableText = searchStandard + ' ' + searchArticles + ' ' + searchExtra;
+                        if (h.statutPaiement === 'payé' || resteAPayer === 0) {
+                            searchStatut = 'payé paye payée payee reglé regle soldé solde';
+                        } else if (h.statutPaiement === 'partiel' && resteAPayer > 0) {
+                            searchStatut = 'partiel partiellement partielle';
+                        } else {
+                            searchStatut = 'impayé impaye impayée impayee non payé nonpayé à payer apayer en attente';
+                        }
 
-                    // Retourner true si la requête est trouvée
+                        if (h.moyenPaiement) {
+                            searchStatut += ' ' + h.moyenPaiement.toLowerCase();
+                        }
+                    }
+
+                    // 4. Recherche dans les DATES
+                    const searchDate = normaliserDate(h.date);
+
+                    // 5. COMBINER toutes les recherches
+                    const allSearchableText = searchBase + ' ' + searchProduits + ' ' + searchStatut + ' ' + searchDate;
+
                     return allSearchableText.includes(query);
                 });
             }
@@ -4616,17 +4660,9 @@
             const endIdx = startIdx + historiquePerPage;
             const pageItems = allItems.slice(startIdx, endIdx);
 
-            // Affichage "Aucun résultat"
+            // Aucun résultat
             if (pageItems.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align:center; padding:30px; color:#6b7280;">
-                            <i class="fa-solid fa-search" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i>
-                            <p style="margin:0; font-weight:600;">Aucun résultat trouvé</p>
-                            <p style="margin:5px 0 0 0; font-size:12px;">Essayez avec d'autres mots-clés</p>
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#6b7280;"><i class="fa-solid fa-search" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i><p style="margin:0; font-weight:600;">Aucun résultat trouvé</p><p style="margin:5px 0 0 0; font-size:12px;">Essayez avec d\'autres mots-clés</p></td></tr>';
                 return;
             }
 
@@ -4639,43 +4675,55 @@
                 if (h.type === 'vente') {
                     const resteAPayer = h.total - (h.montantPaye || 0);
                     if (h.statutPaiement === 'payé' || resteAPayer === 0) {
-                        badgePaiement = `<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #16a34a;">✓ Payé</span>`;
+                        badgePaiement = '<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #16a34a;">✓ Payé</span>';
                     } else if (h.statutPaiement === 'partiel' && resteAPayer > 0) {
-                        badgePaiement = `<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #f59e0b;">Partiel</span>`;
+                        badgePaiement = '<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #f59e0b;">Partiel</span>';
                     } else {
-                        badgePaiement = `<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #dc2626;">Impayé</span>`;
+                        badgePaiement = '<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #dc2626;">Impayé</span>';
                     }
                 }
 
-                tbody.innerHTML += `
-                    <tr onclick="ouvrirDetailVente(${originalIdx})" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''">
-                        <td>${h.date}</td>
-                        <td><strong style="color:${h.type === 'achat' ? '#dc2626' : '#16a34a'}">${h.type === 'achat' ? '<i class="fa-solid fa-cart-shopping"></i> Achat' : '<i class="fa-solid fa-receipt"></i> Vente'}${badgePaiement}</strong></td>
-                        <td>${h.numero || '-'}</td>
-                        <td>${h.tiers}</td>
-                        <td style="font-weight:600; text-align:right">${h.total.toLocaleString()} Ar</td>
-                        <td onclick="event.stopPropagation()">
-                            <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
-                                ${h.type === 'vente' ? `
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'facture')" title="Facture">
-                                        <i class="fa-solid fa-file-invoice"></i>
-                                    </button>
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'proforma')" title="Proforma">
-                                        <i class="fa-solid fa-file-lines"></i>
-                                    </button>
-                                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'bon')" title="BL">
-                                        <i class="fa-solid fa-truck-fast"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
+                const typeIcon = h.type === 'achat' ? '<i class="fa-solid fa-cart-shopping"></i> Achat' : '<i class="fa-solid fa-receipt"></i> Vente';
+                const typeColor = h.type === 'achat' ? '#dc2626' : '#16a34a';
+
+                const btnVente = h.type === 'vente' ? `
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'facture')" title="Facture">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </button>
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'proforma')" title="Proforma">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </button>
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'bon')" title="BL">
+                        <i class="fa-solid fa-truck-fast"></i>
+                    </button>
+                ` : '';
+
+                const row = document.createElement('tr');
+                row.onclick = function() { ouvrirDetailVente(originalIdx); };
+                row.style.cursor = 'pointer';
+                row.onmouseover = function() { this.style.backgroundColor = '#f3f4f6'; };
+                row.onmouseout = function() { this.style.backgroundColor = ''; };
+
+                row.innerHTML = `
+                    <td>${h.date}</td>
+                    <td><strong style="color:${typeColor}">${typeIcon}${badgePaiement}</strong></td>
+                    <td>${h.numero || '-'}</td>
+                    <td>${h.tiers}</td>
+                    <td style="font-weight:600; text-align:right">${h.total.toLocaleString()} Ar</td>
+                    <td onclick="event.stopPropagation()">
+                        <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+                            ${btnVente}
+                        </div>
+                    </td>
                 `;
+
+                tbody.appendChild(row);
             });
 
-            // Créer pagination
+            // Pagination
             createPagination('historique-pagination', historiquePage, totalItems, historiquePerPage, goToHistoriquePage, changeHistoriquePerPage);
         }
+
 
         function goToHistoriquePage(page) {
             historiquePage = page;
@@ -4876,6 +4924,9 @@
             if (modal) modal.remove();
         }
 
+        function fermerAchatModal() {
+            document.getElementById('achat-modal').style.display = 'none';
+        }
         // ========== GESTION PAIEMENT - Marquer Payé ==========
         function marquerPaye(idx) {
             const h = historique[idx];
@@ -5012,10 +5063,6 @@
             updateNotificationBadge();
 
             alert('✓ Paiement annulé');
-        }
-
-        function fermerAchatModal() {
-            document.getElementById('achat-modal').style.display = 'none';
         }
 
         function voirDetail(h) {
