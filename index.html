@@ -2357,6 +2357,60 @@
             }
         }
 
+        /* =====================================================
+        RECHERCHE INTELLIGENTE - Badge et Highlight
+        ===================================================== */
+
+        /* Badge compteur de résultats */
+        .result-badge {
+            background: #111827;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 10px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Highlight des résultats de recherche */
+        mark {
+            background: #fef08a;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        /* Filtres rapides */
+        .quick-filters {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid;
+        }
+
+        .filter-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
@@ -3108,13 +3162,45 @@
                 <!-- TAB HISTORIQUE -->
                 <div id="historique-tab" class="tab-content">
                     <div class="search-box">
-                        <input type="text" id="search-historique" placeholder="🔍 Rechercher..." onkeyup="rechercherHistorique()">
+                        <input type="text" id="search-historique" 
+                            placeholder="🔍 Rechercher par date, client, produit, n°..." 
+                            onkeyup="rechercherHistoriqueDebounced()">
+
                         <select id="filter-type" onchange="filtrerHistorique()">
                             <option value="tous">Tous</option>
                             <option value="achat">Achats</option>
                             <option value="vente">Ventes</option>
                         </select>
+
+                        <button class="btn btn-info" onclick="exporterResultatsRecherche()" title="Exporter les résultats">
+                            <i class="fa-solid fa-download"></i> Exporter
+                        </button>
                     </div>
+
+                    <!-- NOUVEAU: Filtres rapides -->
+                    <div class="quick-filters">
+                        <button class="filter-chip" onclick="appliquerFiltreRapide('impayé')" 
+                                style="background:#fee2e2; color:#991b1b; border-color:#dc2626;">
+                            💳 Impayés
+                        </button>
+                        <button class="filter-chip" onclick="appliquerFiltreRapide('payé')" 
+                                style="background:#dcfce7; color:#166534; border-color:#16a34a;">
+                            ✓ Payés
+                        </button>
+                        <button class="filter-chip" onclick="appliquerFiltreRapide('aujourdhui')" 
+                                style="background:#eff6ff; color:#1e40af; border-color:#3b82f6;">
+                            📅 Aujourd'hui
+                        </button>
+                        <button class="filter-chip" onclick="appliquerFiltreRapide('semaine')" 
+                                style="background:#f5f3ff; color:#6b21a8; border-color:#9333ea;">
+                            📊 Cette semaine
+                        </button>
+                        <button class="filter-chip" onclick="effacerFiltres()" 
+                                style="background:#f3f4f6; color:#374151; border-color:#d1d5db;">
+                            🔄 Tout effacer
+                        </button>
+                    </div>
+
                     
                     <div class="table-container">
                         <table>
@@ -4465,87 +4551,173 @@
             afficherStock();
         }
 
-
+        // ============================================================================
+        // FONCTION AMÉLIORÉE: afficherHistorique() avec recherche intelligente
+        // ============================================================================
         function afficherHistorique() {
             const tbody = document.getElementById('historique-tbody');
             tbody.innerHTML = '';
-            
-            // ✅ Appliquer filtres
+
+            // Appliquer filtres
             let allItems = historique.slice().reverse();
-            
-            // Filtre recherche
+
+            // *** RECHERCHE INTELLIGENTE AMÉLIORÉE ***
             if (historiqueSearchQuery) {
                 allItems = allItems.filter(h => {
-                    const searchText = `${h.date} ${h.type} ${h.numero || ''} ${h.tiers} ${h.total}`.toLowerCase();
-                    return searchText.includes(historiqueSearchQuery.toLowerCase());
+                    const query = historiqueSearchQuery.toLowerCase();
+
+                    // 1. Recherche dans les champs standards
+                    const searchStandard = [
+                        h.date,
+                        h.type,
+                        h.numero || '',
+                        h.tiers || '',
+                        h.total.toString()
+                    ].join(' ').toLowerCase();
+
+                    // 2. Recherche dans les articles (NOUVEAU!)
+                    let searchArticles = '';
+                    if (h.articles && h.articles.length > 0) {
+                        searchArticles = h.articles.map(a => {
+                            return [
+                                a.produit || '',
+                                a.quantite.toString(),
+                                a.unite || '',
+                                a.prix.toString()
+                            ].join(' ');
+                        }).join(' ').toLowerCase();
+                    }
+
+                    // 3. Recherche dans les informations complémentaires
+                    const searchExtra = [
+                        h.adresse || '',
+                        h.notes || '',
+                        h.statutPaiement || '',
+                        h.moyenPaiement || ''
+                    ].join(' ').toLowerCase();
+
+                    // Combiner toutes les recherches
+                    const allSearchableText = searchStandard + ' ' + searchArticles + ' ' + searchExtra;
+
+                    // Retourner true si la requête est trouvée
+                    return allSearchableText.includes(query);
                 });
             }
-            
+
             // Filtre type
             if (historiqueTypeFilter !== 'tous') {
                 allItems = allItems.filter(h => h.type === historiqueTypeFilter);
             }
-            
+
             const totalItems = allItems.length;
-            
+
             // Pagination
             const startIdx = (historiquePage - 1) * historiquePerPage;
             const endIdx = startIdx + historiquePerPage;
             const pageItems = allItems.slice(startIdx, endIdx);
-            
+
+            // Affichage "Aucun résultat"
+            if (pageItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:30px; color:#6b7280;">
+                            <i class="fa-solid fa-search" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i>
+                            <p style="margin:0; font-weight:600;">Aucun résultat trouvé</p>
+                            <p style="margin:5px 0 0 0; font-size:12px;">Essayez avec d'autres mots-clés</p>
+                        </td>
+                    </tr>
+                `;
+                afficherBadgeResultats(0);
+                return;
+            }
+
+            // Afficher les résultats
             pageItems.forEach((h, i) => {
-                // Trouver l'index original dans historique (avant reverse)
                 const originalIdx = historique.findIndex(item => item === h);
-                
-                // ✅ Badge statut paiement
-                // Badge statut paiement - VERSION PLUS LISIBLE
+
+                // Badge statut paiement
                 let badgePaiement = '';
                 if (h.type === 'vente') {
                     const resteAPayer = h.total - (h.montantPaye || 0);
-                    
-                    if (h.statutPaiement === 'pay' || resteAPayer <= 0) {
-                        badgePaiement = ` <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #16a34a;">✓ Payé</span>`;
+                    if (h.statutPaiement === 'payé' || resteAPayer === 0) {
+                        badgePaiement = `<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #16a34a;">✓ Payé</span>`;
                     } else if (h.statutPaiement === 'partiel' && resteAPayer > 0) {
-                        badgePaiement = ` <span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #f59e0b;">⏳ Partiel</span>`;
+                        badgePaiement = `<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #f59e0b;">Partiel</span>`;
                     } else {
-                        badgePaiement = ` <span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #dc2626;">✗ Impayé</span>`;
+                        badgePaiement = `<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; margin-left:8px; font-weight:700; border:1px solid #dc2626;">Impayé</span>`;
                     }
                 }
 
+                // Surligner le terme recherché
+                let displayTiers = h.tiers || '-';
+                let displayNumero = h.numero || '-';
+
+                if (historiqueSearchQuery) {
+                    const regex = new RegExp(`(${escapeRegex(historiqueSearchQuery)})`, 'gi');
+                    displayTiers = displayTiers.replace(regex, '<mark>$1</mark>');
+                    displayNumero = displayNumero.replace(regex, '<mark>$1</mark>');
+                }
+
                 tbody.innerHTML += `
-                    <tr onclick="ouvrirDetailVente(${originalIdx})" 
-                        style="cursor: pointer;" 
-                        onmouseover="this.style.backgroundColor='#f3f4f6'" 
-                        onmouseout="this.style.backgroundColor=''">
+                    <tr>
                         <td>${h.date}</td>
+                        <td><strong style="color:${h.type === 'achat' ? '#dc2626' : '#16a34a'}">${h.type.toUpperCase()}</strong></td>
+                        <td>${displayNumero}</td>
+                        <td>${displayTiers}${badgePaiement}</td>
+                        <td style="text-align:right"><strong>${h.total.toLocaleString()} Ar</strong></td>
                         <td>
-                            ${h.type === 'achat' ? '<i class="fa-solid fa-cart-shopping"></i> Achat' : '<i class="fa-solid fa-receipt"></i> Vente'}${badgePaiement}
-                        </td>
-                        <td>${h.numero || '-'}</td>
-                        <td>${h.tiers}</td>
-                        <td style="font-weight:600; text-align:right;">${h.total.toLocaleString()} Ar</td>
-                        <td onclick="event.stopPropagation()">
-                            <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
-                                ${h.type === 'vente' ? `
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"facture")' title="Facture">
-                                        <i class="fa-solid fa-file-invoice"></i>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button class="btn-compact btn-compact-dark" onclick="voirDetail(historique[${originalIdx}])" title="Voir détails">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                ${h.type === 'vente' && h.statutPaiement !== 'payé' ? `
+                                    <button class="btn-compact btn-compact-success" onclick="marquerPaye(${originalIdx})" title="Marquer comme payé">
+                                        <i class="fa-solid fa-check"></i> Payé
                                     </button>
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"proforma")' title="Proforma">
-                                        <i class="fa-solid fa-file-lines"></i>
+                                ` : ''}
+                                ${h.type === 'vente' && h.statutPaiement === 'payé' ? `
+                                    <button class="btn-compact btn-compact-gray" onclick="annulerPaiement(${originalIdx})" title="Annuler paiement">
+                                        <i class="fa-solid fa-times"></i>
                                     </button>
-                                    <button class="btn-compact" onclick='genererPDFDepuisHistorique(historique[${originalIdx}],"bon")' title="BL">
-                                        <i class="fa-solid fa-truck-fast"></i>
+                                ` : ''}
+                                ${h.pieces && h.pieces.length > 0 && h.pieces[0].fileKey ? `
+                                    <button class="btn-compact btn-compact-dark" onclick="ouvrirFactureHistoriqueSafe(historique[${originalIdx}])" title="Ouvrir facture PDF">
+                                        <i class="fa-solid fa-file-pdf"></i> PDF
                                     </button>
                                 ` : ''}
                             </div>
                         </td>
                     </tr>
                 `;
-
             });
-            
-            // Create pagination
-            createPagination('historique-pagination', historiquePage, totalItems, historiquePerPage, 'goToHistoriquePage', 'changeHistoriquePerPage');
+
+            // Créer pagination
+            createPagination('historique-pagination', historiquePage, totalItems, historiquePerPage, goToHistoriquePage, changeHistoriquePerPage);
+
+            // Afficher badge de résultats
+            afficherBadgeResultats(totalItems);
+        }
+
+        // Fonction helper pour échapper les caractères spéciaux regex
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Afficher le badge avec le nombre de résultats
+        function afficherBadgeResultats(count) {
+            const searchBox = document.querySelector('#historique-tab .search-box');
+            if (!searchBox) return;
+
+            // Supprimer ancien badge s'il existe
+            const oldBadge = searchBox.querySelector('.result-badge');
+            if (oldBadge) oldBadge.remove();
+
+            if (historiqueSearchQuery || historiqueTypeFilter !== 'tous') {
+                const badge = document.createElement('div');
+                badge.className = 'result-badge';
+                badge.innerHTML = `<i class="fa-solid fa-filter"></i> ${count} résultat${count > 1 ? 's' : ''} trouvé${count > 1 ? 's' : ''}`;
+                searchBox.appendChild(badge);
+            }
         }
 
         function goToHistoriquePage(page) {
@@ -4559,9 +4731,110 @@
             afficherHistorique();
         }
 
+        // ============================================================================
+        // FONCTIONS BONUS: Filtres rapides et Export
+        // ============================================================================
 
+        // Debounce pour optimiser la recherche
+        let searchTimeout;
+        function rechercherHistoriqueDebounced() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                rechercherHistorique();
+            }, 300); // Attendre 300ms après la dernière frappe
+        }
 
+        // Filtres rapides
+        function appliquerFiltreRapide(type) {
+            const searchInput = document.getElementById('search-historique');
 
+            switch(type) {
+                case 'impayé':
+                    historiqueTypeFilter = 'vente';
+                    document.getElementById('filter-type').value = 'vente';
+                    historiqueSearchQuery = 'impayé';
+                    searchInput.value = 'impayé';
+                    break;
+                case 'payé':
+                    historiqueTypeFilter = 'vente';
+                    document.getElementById('filter-type').value = 'vente';
+                    historiqueSearchQuery = 'payé';
+                    searchInput.value = 'payé';
+                    break;
+                case 'aujourdhui':
+                    const today = new Date().toISOString().slice(0, 10);
+                    historiqueSearchQuery = today;
+                    searchInput.value = today;
+                    break;
+                case 'semaine':
+                    const week = new Date();
+                    week.setDate(week.getDate() - 7);
+                    historiqueSearchQuery = week.toISOString().slice(0, 7); // Format YYYY-MM
+                    searchInput.value = historiqueSearchQuery;
+                    break;
+            }
+
+            rechercherHistorique();
+        }
+
+        // Effacer tous les filtres
+        function effacerFiltres() {
+            historiqueSearchQuery = '';
+            historiqueTypeFilter = 'tous';
+            document.getElementById('search-historique').value = '';
+            document.getElementById('filter-type').value = 'tous';
+            historiquePage = 1;
+            afficherHistorique();
+        }
+
+        // Export des résultats filtrés en CSV
+        function exporterResultatsRecherche() {
+            // Récupérer les résultats filtrés
+            let items = historique.slice().reverse();
+
+            // Appliquer recherche
+            if (historiqueSearchQuery) {
+                items = items.filter(h => {
+                    const query = historiqueSearchQuery.toLowerCase();
+                    const searchStandard = [h.date, h.type, h.numero || '', h.tiers || '', h.total.toString()].join(' ').toLowerCase();
+                    let searchArticles = '';
+                    if (h.articles && h.articles.length > 0) {
+                        searchArticles = h.articles.map(a => (a.produit || '')).join(' ').toLowerCase();
+                    }
+                    const searchExtra = [h.adresse || '', h.notes || '', h.statutPaiement || ''].join(' ').toLowerCase();
+                    const allText = searchStandard + ' ' + searchArticles + ' ' + searchExtra;
+                    return allText.includes(query);
+                });
+            }
+
+            // Appliquer filtre type
+            if (historiqueTypeFilter !== 'tous') {
+                items = items.filter(h => h.type === historiqueTypeFilter);
+            }
+
+            if (items.length === 0) {
+                alert('Aucun résultat à exporter');
+                return;
+            }
+
+            // Créer CSV
+            let csv = 'Date,Type,Numéro,Tiers,Total (Ar),Produits,Quantités,Statut\n';
+            items.forEach(h => {
+                const produits = h.articles ? h.articles.map(a => a.produit).join('; ') : '-';
+                const quantites = h.articles ? h.articles.map(a => `${a.quantite} ${a.unite}`).join('; ') : '-';
+                const statut = h.statutPaiement || '-';
+                csv += `"${h.date}","${h.type}","${h.numero || '-'}","${h.tiers || '-'}","${h.total}","${produits}","${quantites}","${statut}"\n`;
+            });
+
+            // Télécharger
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `historique_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+
+            alert(`✅ ${items.length} transaction(s) exportée(s) avec succès!`);
+        }
 
         // ========== GESTION PAIEMENT - Marquer Payé ==========
 
