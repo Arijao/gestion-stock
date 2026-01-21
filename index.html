@@ -6810,26 +6810,30 @@
             
             y += 5;
 
-            // === AJOUT CODE-BARRES ===
+            // === AJOUT CODE-BARRES OPTIMISÉ POUR SCAN ===
             try {
-                // Créer un canvas temporaire pour le code-barres
+                // Créer un canvas temporaire pour le code-barres avec haute résolution
                 const barcodeCanvas = document.createElement('canvas');
                 
-                // Générer le code-barres avec le numéro du document
+                // Générer le code-barres avec paramètres optimisés pour scan
                 JsBarcode(barcodeCanvas, data.numero, {
                     format: 'CODE128',
-                    width: 2,
-                    height: 40,
-                    displayValue: false, // On n'affiche pas le texte sous le code-barres (déjà affiché au-dessus)
-                    margin: 0
+                    width: 3,              // Largeur des barres augmentée (2 → 3) pour meilleure lisibilité
+                    height: 50,            // Hauteur augmentée (40 → 50) pour scan optimal
+                    displayValue: true,    // Afficher le numéro sous le code-barres pour référence
+                    fontSize: 12,          // Taille du texte sous le code-barres
+                    textMargin: 2,         // Marge entre barres et texte
+                    margin: 5,             // Marges autour du code-barres
+                    background: '#ffffff', // Fond blanc pour contraste maximal
+                    lineColor: '#000000'   // Barres noires pour contraste maximal
                 });
                 
-                // Convertir le canvas en image data URL
-                const barcodeDataUrl = barcodeCanvas.toDataURL('image/png');
+                // Convertir le canvas en image data URL avec qualité maximale
+                const barcodeDataUrl = barcodeCanvas.toDataURL('image/png', 1.0);
                 
-                // Calculer les dimensions pour centrer le code-barres (largeur max 60mm)
-                const barcodeWidth = 60;
-                const barcodeHeight = 15;
+                // Calculer les dimensions pour centrer le code-barres
+                const barcodeWidth = 65;  // Largeur augmentée pour contenir le code-barres avec marges
+                const barcodeHeight = 18; // Hauteur ajustée pour inclure le texte
                 const barcodeX = (80 - barcodeWidth) / 2; // Centrer horizontalement
                 
                 // Ajouter le code-barres au PDF
@@ -6839,7 +6843,8 @@
                 console.error('Erreur génération code-barres:', error);
                 // Si erreur, on continue sans code-barres
             }
-            // === FIN CODE-BARRES ===
+            // === FIN CODE-BARRES OPTIMISÉ ===
+
             // Ajuster la hauteur du PDF au contenu réel
             const finalHeight = y + 5; // Ajouter une petite marge en bas
             const finalPdf = new jsPDF({
