@@ -3676,14 +3676,7 @@
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
  
-        // Variables de configuration entreprise
-        let nomEntreprise = "Mon Entreprise";
-        let adresseEntreprise = "123 Rue Example, Ville";
-        let telEntreprise = "+261 34 00 000 00";
-        let emailEntreprise = "contact@monentreprise.mg";
-        let nifEntreprise = "123456789";
-        let statEntreprise = "987654321";
-        let appLogoData = null; // Sera rempli si l'utilisateur upload un logo
+        
 
         // Window onload
         window.onload = async function() {
@@ -5394,6 +5387,23 @@
         function genererPDFA4(type, data) {
             const container = document.getElementById('pdf-preview-a4');
             
+            // Récupérer les infos entreprise depuis les champs de configuration
+            const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
+            const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
+            const telEntreprise = document.getElementById('config-tel')?.value || '';
+            const emailEntreprise = document.getElementById('config-email')?.value || '';
+            const nifEntreprise = document.getElementById('config-nif')?.value || '';
+            const statEntreprise = document.getElementById('config-stat')?.value || '';
+            
+            // Récupérer le logo si existe
+            let appLogoData = null;
+            const logoMarkElement = document.getElementById('app-logo-mark');
+            if (logoMarkElement) {
+                const logoImg = logoMarkElement.querySelector('img');
+                if (logoImg) {
+                    appLogoData = logoImg.src;
+                }
+            }
             // Déterminer le titre selon le type
             let titre = 'FACTURE';
             if (type === 'proforma') titre = 'FACTURE PROFORMA';
@@ -5534,6 +5544,23 @@
         function genererPDFTicket(type, data) {
             const container = document.getElementById('pdf-preview-ticket');
             
+            // Récupérer les infos entreprise depuis les champs de configuration
+            const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
+            const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
+            const telEntreprise = document.getElementById('config-tel')?.value || '';
+            const emailEntreprise = document.getElementById('config-email')?.value || '';
+            const nifEntreprise = document.getElementById('config-nif')?.value || '';
+            const statEntreprise = document.getElementById('config-stat')?.value || '';
+            
+            // Récupérer le logo si existe
+            let appLogoData = null;
+            const logoMarkElement = document.getElementById('app-logo-mark');
+            if (logoMarkElement) {
+                const logoImg = logoMarkElement.querySelector('img');
+                if (logoImg) {
+                    appLogoData = logoImg.src;
+                }
+            }
             // Déterminer le titre selon le type
             let titre = 'FACTURE';
             if (type === 'proforma') titre = 'PROFORMA';
