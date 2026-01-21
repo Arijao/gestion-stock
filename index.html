@@ -5358,6 +5358,11 @@
 
                     // 3) Unit default
                     if(!item.unite) item.unite = 'Pièce';
+
+                    // 4) Migration: champs pour modification et archivage
+                    if(item.actif === undefined) item.actif = true;
+                    if(!item.modifications) item.modifications = [];
+                    if(!item.dateCreation) item.dateCreation = new Date().toISOString();
                 });
 
                 // --- CONFIG UI ---
