@@ -3668,7 +3668,7 @@
         let articlesDP = [];
         let historiqueVentes = [];
         let venteListe = [];
-        
+
         // PAGINATION
         let stockPage = 1;
         let stockPerPage = 10;
@@ -6967,21 +6967,43 @@
 
         function genererPDFDepuisHistorique(index) {
             const vente = historiqueVentes[index];
-            if (!vente || !vente.articles || vente.articles.length === 0) {
-                alert('Données de vente invalides');
+            
+            // Debug : afficher la structure des données
+            console.log('Vente récupérée:', vente);
+            
+            if (!vente) {
+                alert('Vente introuvable à l\'index ' + index);
+                return;
+            }
+            
+            // Vérifier les articles de différentes manières possibles
+            let articles = [];
+            if (vente.articles && Array.isArray(vente.articles)) {
+                articles = vente.articles;
+            } else if (vente.liste && Array.isArray(vente.liste)) {
+                articles = vente.liste;
+            } else if (vente.items && Array.isArray(vente.items)) {
+                articles = vente.items;
+            }
+            
+            if (articles.length === 0) {
+                alert('Aucun article trouvé dans cette vente');
+                console.log('Structure de vente:', Object.keys(vente));
                 return;
             }
             
             // Préparer les données au bon format
             const invoiceData = {
-                numero: vente.numero || `V${String(index + 1).padStart(4, '0')}`,
-                date: vente.date,
-                client: vente.client,
+                numero: vente.numero || vente.num || `V${String(index + 1).padStart(4, '0')}`,
+                date: vente.date || new Date().toISOString().split('T')[0],
+                client: vente.client || 'Client',
                 adresse: vente.adresse || '',
                 delai: vente.delai || '30',
-                articles: vente.articles,
-                total: vente.total
+                articles: articles,
+                total: vente.total || 0
             };
+            
+            console.log('InvoiceData préparé:', invoiceData);
             
             // Ouvrir le modal de sélection de format
             openFormatModal('facture', invoiceData);
@@ -7004,22 +7026,52 @@
         }
 
         function genererPDFVente(type) {
-            // Vérifier qu'il y a des articles
-            if (!venteListe || venteListe.length === 0) {
-                alert('Aucun article dans la vente');
+            // Debug : afficher venteListe
+            console.log('Type:', type);
+            console.log('venteListe:', venteListe);
+            console.log('Longueur venteListe:', venteListe ? venteListe.length : 'undefined');
+            
+            // Vérifier qu'il y a des articles (avec plusieurs noms possibles)
+            let articles = venteListe || window.venteListe || [];
+            
+            if (!articles || articles.length === 0) {
+                alert('Aucun article dans la vente. Veuillez d\'abord ajouter des articles.');
+                console.error('venteListe est vide ou undefined');
                 return;
+            }
+            
+            // Vérifier les champs requis
+            const numero = document.getElementById('vente-numero')?.value;
+            const date = document.getElementById('vente-date')?.value;
+            const client = document.getElementById('vente-client')?.value;
+            const adresse = document.getElementById('vente-adresse')?.value;
+            
+            if (!numero || !date || !client) {
+                alert('Veuillez remplir tous les champs obligatoires (Numéro, Date, Client)');
+                return;
+            }
+            
+            // Calculer le total
+            let total = 0;
+            if (typeof calculerTotalVente === 'function') {
+                total = calculerTotalVente();
+            } else {
+                // Calcul manuel si la fonction n'existe pas
+                total = articles.reduce((sum, art) => sum + (art.prix * art.quantite), 0);
             }
             
             // Préparer les données de la facture
             const invoiceData = {
-                numero: document.getElementById('vente-numero').value,
-                date: document.getElementById('vente-date').value,
-                client: document.getElementById('vente-client').value,
-                adresse: document.getElementById('vente-adresse').value,
-                delai: document.getElementById('vente-delai').value || '30',
-                articles: venteListe,
-                total: calculerTotalVente()
+                numero: numero,
+                date: date,
+                client: client,
+                adresse: adresse,
+                delai: document.getElementById('vente-delai')?.value || '30',
+                articles: articles,
+                total: total
             };
+            
+            console.log('InvoiceData créé:', invoiceData);
             
             // Ouvrir le modal de sélection de format
             openFormatModal(type, invoiceData);
