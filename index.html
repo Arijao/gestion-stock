@@ -15,6 +15,7 @@
     <meta name="apple-mobile-web-app-title" content="Stock Manager">
     <!-- Librairies JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <link rel="stylesheet"
@@ -6808,7 +6809,37 @@
             pdf.text('À bientôt', centerX, y, { align: 'center' });
             
             y += 5;
-            
+
+            // === AJOUT CODE-BARRES ===
+            try {
+                // Créer un canvas temporaire pour le code-barres
+                const barcodeCanvas = document.createElement('canvas');
+                
+                // Générer le code-barres avec le numéro du document
+                JsBarcode(barcodeCanvas, data.numero, {
+                    format: 'CODE128',
+                    width: 2,
+                    height: 40,
+                    displayValue: false, // On n'affiche pas le texte sous le code-barres (déjà affiché au-dessus)
+                    margin: 0
+                });
+                
+                // Convertir le canvas en image data URL
+                const barcodeDataUrl = barcodeCanvas.toDataURL('image/png');
+                
+                // Calculer les dimensions pour centrer le code-barres (largeur max 60mm)
+                const barcodeWidth = 60;
+                const barcodeHeight = 15;
+                const barcodeX = (80 - barcodeWidth) / 2; // Centrer horizontalement
+                
+                // Ajouter le code-barres au PDF
+                pdf.addImage(barcodeDataUrl, 'PNG', barcodeX, y, barcodeWidth, barcodeHeight);
+                y += barcodeHeight + 5; // Espace après le code-barres
+            } catch (error) {
+                console.error('Erreur génération code-barres:', error);
+                // Si erreur, on continue sans code-barres
+            }
+            // === FIN CODE-BARRES ===
             // Ajuster la hauteur du PDF au contenu réel
             const finalHeight = y + 5; // Ajouter une petite marge en bas
             const finalPdf = new jsPDF({
