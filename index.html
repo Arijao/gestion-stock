@@ -4898,6 +4898,104 @@
             ].join(' ').toLowerCase();
         }
 
+        // Pagination spécifique pour Historique (corrigée)
+        function createPaginationHistorique(containerId, currentPage, totalItems, itemsPerPage, onPageChange, onPerPageChange) {
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+            currentPage = Math.min(Math.max(1, currentPage), totalPages);
+            
+            const hasItems = totalItems > 0;
+            const start = hasItems ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
+            const end = hasItems ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
+            
+            let html = `
+                <div class="pagination-wrapper">
+                    <div class="pagination-info">
+                        ${hasItems ? `Affichage ${start}-${end} sur ${totalItems}` : 'Aucune donnée'}
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn hist-btn-first" ${currentPage === 1 || !hasItems ? 'disabled' : ''}>
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                        <button class="pagination-btn hist-btn-prev" ${currentPage === 1 || !hasItems ? 'disabled' : ''}>
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+            `;
+            
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn hist-btn-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            
+            html += `
+                        <button class="pagination-btn hist-btn-next" ${currentPage === totalPages || !hasItems ? 'disabled' : ''}>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <button class="pagination-btn hist-btn-last" ${currentPage === totalPages || !hasItems ? 'disabled' : ''}>
+                            <i class="fa-solid fa-angles-right"></i>
+                        </button>
+                    </div>
+                    <div class="page-size-selector">
+                        <span>Par page</span>
+                        <select class="hist-select-per-page">
+                            <option value="5" ${itemsPerPage === 5 ? 'selected' : ''}>5</option>
+                            <option value="10" ${itemsPerPage === 10 ? 'selected' : ''}>10</option>
+                            <option value="20" ${itemsPerPage === 20 ? 'selected' : ''}>20</option>
+                            <option value="25" ${itemsPerPage === 25 ? 'selected' : ''}>25</option>
+                            <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>
+                            <option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = html;
+            
+            // Attacher les événements
+            const btnFirst = container.querySelector('.hist-btn-first');
+            if (btnFirst && !btnFirst.disabled) {
+                btnFirst.onclick = () => onPageChange(1);
+            }
+            
+            const btnPrev = container.querySelector('.hist-btn-prev');
+            if (btnPrev && !btnPrev.disabled) {
+                btnPrev.onclick = () => onPageChange(Math.max(1, currentPage - 1));
+            }
+            
+            const btnNext = container.querySelector('.hist-btn-next');
+            if (btnNext && !btnNext.disabled) {
+                btnNext.onclick = () => onPageChange(Math.min(totalPages, currentPage + 1));
+            }
+            
+            const btnLast = container.querySelector('.hist-btn-last');
+            if (btnLast && !btnLast.disabled) {
+                btnLast.onclick = () => onPageChange(totalPages);
+            }
+            
+            container.querySelectorAll('.hist-btn-page').forEach(btn => {
+                const pageNum = parseInt(btn.dataset.page, 10);
+                if (!isNaN(pageNum)) {
+                    btn.onclick = () => onPageChange(pageNum);
+                }
+            });
+            
+            // ⚠️ CRITIQUE : Select "par page"
+            const select = container.querySelector('.hist-select-per-page');
+            if (select) {
+                select.onchange = function(e) {
+                    const newValue = parseInt(e.target.value, 10);
+                    onPerPageChange(newValue);
+                };
+            }
+        }
+
         // ============================================================================
         // FONCTION AMÉLIORÉE: afficherHistorique() avec recherche intelligente
         // ============================================================================
@@ -5056,7 +5154,8 @@
             });
 
             // Pagination
-            createPagination('historique-pagination', historiquePage, totalItems, historiquePerPage, goToHistoriquePage, changeHistoriquePerPage);
+            createPaginationHistorique('historique-pagination', historiquePage, totalItems, historiquePerPage, goToHistoriquePage, changeHistoriquePerPage);
+
         }
 
 
