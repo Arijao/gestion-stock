@@ -3147,13 +3147,15 @@
                                         <thead>
                                             <tr>
                                                 <th>Produit</th>
-                                                <th style="text-align:right;">Quantité</th>
+                                                <th style="text-align:right">Quantité</th>
                                                 <th>Unité</th>
-                                                <th style="text-align:right;">Prix Moyen</th>
-                                                <th style="text-align:right;">Valeur</th>
+                                                <th style="text-align:right">Prix Moyen</th>
+                                                <th style="text-align:right">Valeur</th>
                                                 <th>Statut</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
+
                             <tbody id="stock-tbody"></tbody>
                         </table>
                     </div>
@@ -4308,7 +4310,10 @@
             
             // Collect all stock items
             const allItems = [];
-            Object.keys(stock).sort().forEach(p => {
+            Object.keys(stock)
+                .filter(p => stock[p].actif !== false)  // ← Filtre: masquer les archivés
+                .sort()
+                .forEach(p => {
                 const s = stock[p];
                 const qte = getStockQty(p);
                 if(qte <= 0) return;
@@ -4356,20 +4361,29 @@
                 if(item.qte < 5) badgeClass = 'stock-low';
                 else if(item.qte < 20) badgeClass = 'stock-medium';
                 
-                tbody.innerHTML += `
-                <tr>
+                tbody.innerHTML += `<tr>
                     <td>${item.produit}</td>
-                    <td style="text-align:right;">${item.qte}</td>
+                    <td style="text-align:right">${item.qte}</td>
                     <td>${item.unite}</td>
-                    <td style="text-align:right;">
-                        <div style="font-weight:600;">${prixMoy.toLocaleString()} Ar</div>
-                        <small style="color:#666; font-size:11px;">(${nbLots} lot${nbLots>1?'s':''})</small>
-                        <button onclick="showLotDetails('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="margin-top:4px;">📦 Détails FIFO</button>
+                    <td style="text-align:right">
+                        <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
+                        <small style="color:#666; font-size:11px">${nbLots} lot${nbLots>1?'s':''}</small>
+                        <button onclick="showLotDetails('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="margin-top:4px">📊 Détails FIFO</button>
                     </td>
-                    <td style="text-align:right;">${item.valeur.toLocaleString()} Ar</td>
-                    <td><span class="stock-badge ${badgeClass}">${item.qte < 5 ? 'Faible' : (item.qte < 20 ? 'Moyen' : 'Bon')}</span></td>
-                </tr>
-                `;
+                    <td style="text-align:right">${item.valeur.toLocaleString()} Ar</td>
+                    <td><span class="stock-badge ${badgeClass}">${item.qte <= 5 ? 'Faible' : item.qte <= 20 ? 'Moyen' : 'Bon'}</span></td>
+                    <td style="text-align:center">
+                        <div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap;">
+                            <button onclick="ouvrirModalModification('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#3b82f6; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Modifier">
+                                ✏️ Modifier
+                            </button>
+                            <button onclick="ouvrirModalArchivage('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#ef4444; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Archiver">
+                                📦 Archiver
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+
             });
             
             updateDashStockCard();
@@ -4544,6 +4558,261 @@
             }
         }
 
+        // Ouvrir modal de modification
+        function ouvrirModalModification(produit, event) {
+            if(event) event.stopPropagation();
+            
+            const item = stock[produit];
+            if(!item) {
+                alert('Produit introuvable');
+                return;
+            }
+            
+            // Vérifier si le produit a des transactions dans l'historique
+            const utiliseDansHistorique = historique.some(h => 
+                h.articles && h.articles.some(a => a.produit === produit)
+            );
+            
+            const modal = document.createElement('div');
+            modal.id = 'modal-modification';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                    <h3 style="margin: 0 0 20px 0; color: #1f2937;">✏️ Modifier le produit</h3>
+                    
+                    ${utiliseDansHistorique ? `
+                        <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b; font-size: 13px; color: #92400e;">
+                            ⚠️ <strong>Attention :</strong> Ce produit est utilisé dans l'historique (${
+                                historique.filter(h => h.articles && h.articles.some(a => a.produit === produit)).length
+                            } transactions).
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 13px;">Nom du produit</label>
+                        <input type="text" id="modal-modif-nom" value="${produit}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 13px;">Unité</label>
+                        <input type="text" id="modal-modif-unite" value="${item.unite}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; color: #6b7280;">
+                        <strong>Note :</strong> La quantité et le prix ne peuvent pas être modifiés directement. Utilisez les achats/ventes pour ajuster le stock.
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="fermerModalModification()" style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="appliquerModification('${produit.replace(/'/g, "\\'")}', '${produit.replace(/'/g, "\\'")}', event)" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            ✓ Enregistrer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant sur le fond
+            modal.addEventListener('click', (e) => {
+                if(e.target === modal) {
+                    fermerModalModification();
+                }
+            });
+        }
+
+        // Fermer modal modification
+        function fermerModalModification() {
+            const modal = document.getElementById('modal-modification');
+            if(modal) modal.remove();
+        }
+
+        // Appliquer la modification
+        function appliquerModification(ancienNom, ancienNomOriginal, event) {
+            if(event) event.preventDefault();
+            
+            const nouveauNom = document.getElementById('modal-modif-nom').value.trim();
+            const nouvelleUnite = document.getElementById('modal-modif-unite').value.trim();
+            
+            if(!nouveauNom || !nouvelleUnite) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            // Normaliser les noms
+            const ancienNomNorm = normaliserNomProduit(ancienNomOriginal);
+            const nouveauNomNorm = normaliserNomProduit(nouveauNom);
+            
+            // Vérifier si le nouveau nom existe déjà (et c'est un produit différent)
+            if(nouveauNomNorm !== ancienNomNorm && stock[nouveauNomNorm]) {
+                alert('Un produit avec ce nom existe déjà');
+                return;
+            }
+            
+            // Journaliser la modification
+            const modification = {
+                date: new Date().toISOString(),
+                utilisateur: config.responsable || 'Admin',
+                ancien: { nom: ancienNomOriginal, unite: stock[ancienNomNorm].unite },
+                nouveau: { nom: nouveauNom, unite: nouvelleUnite }
+            };
+            
+            // Appliquer les modifications
+            if(nouveauNomNorm !== ancienNomNorm) {
+                // Renommer le produit
+                stock[nouveauNomNorm] = stock[ancienNomNorm];
+                delete stock[ancienNomNorm];
+                
+                // Mettre à jour l'historique
+                historique.forEach(h => {
+                    if(h.articles) {
+                        h.articles.forEach(a => {
+                            if(a.produit === ancienNomOriginal) {
+                                a.produit = nouveauNom;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Modifier l'unité
+            stock[nouveauNomNorm].unite = nouvelleUnite;
+            
+            // Ajouter au journal des modifications
+            if(!stock[nouveauNomNorm].modifications) {
+                stock[nouveauNomNorm].modifications = [];
+            }
+            stock[nouveauNomNorm].modifications.push(modification);
+            
+            // Sauvegarder
+            sauvegarderDonnees();
+            afficherStock();
+            fermerModalModification();
+            
+            alert('✓ Produit modifié avec succès');
+        }
+
+        // Ouvrir modal d'archivage
+        function ouvrirModalArchivage(produit, event) {
+            if(event) event.stopPropagation();
+            
+            const item = stock[produit];
+            if(!item) {
+                alert('Produit introuvable');
+                return;
+            }
+            
+            const qteActuelle = getStockQty(produit);
+            const utiliseDansHistorique = historique.filter(h => 
+                h.articles && h.articles.some(a => a.produit === produit)
+            ).length;
+            
+            const modal = document.createElement('div');
+            modal.id = 'modal-archivage';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                    <h3 style="margin: 0 0 20px 0; color: #dc2626;">📦 Archiver le produit</h3>
+                    
+                    <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
+                        <p style="margin: 0 0 10px 0; font-weight: 600; color: #991b1b;">Êtes-vous sûr de vouloir archiver ce produit ?</p>
+                        <p style="margin: 0; font-size: 13px; color: #991b1b;">
+                            <strong>${produit}</strong><br>
+                            Quantité actuelle : ${qteActuelle} ${item.unite}
+                        </p>
+                    </div>
+                    
+                    ${utiliseDansHistorique > 0 ? `
+                        <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6; font-size: 13px; color: #1e40af;">
+                            ℹ️ Ce produit est référencé dans <strong>${utiliseDansHistorique} transactions</strong>. Il restera visible dans l'historique.
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 13px;">Raison de l'archivage (optionnel)</label>
+                        <textarea id="modal-archivage-raison" placeholder="Ex: Produit discontinué, remplacé par..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 80px;"></textarea>
+                    </div>
+                    
+                    <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; color: #6b7280;">
+                        <strong>Note :</strong> Le produit archivé n'apparaîtra plus dans le stock actif mais sera conservé dans les données et l'historique.
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="fermerModalArchivage()" style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="confirmerArchivage('${produit.replace(/'/g, "\\'")}', event)" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            📦 Archiver
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant sur le fond
+            modal.addEventListener('click', (e) => {
+                if(e.target === modal) {
+                    fermerModalArchivage();
+                }
+            });
+        }
+
+        // Fermer modal archivage
+        function fermerModalArchivage() {
+            const modal = document.getElementById('modal-archivage');
+            if(modal) modal.remove();
+        }
+
+        // Confirmer l'archivage
+        function confirmerArchivage(produit, event) {
+            if(event) event.preventDefault();
+            
+            const raison = document.getElementById('modal-archivage-raison').value.trim();
+            
+            if(!stock[produit]) {
+                alert('Produit introuvable');
+                return;
+            }
+            
+            // Archiver le produit
+            stock[produit].actif = false;
+            stock[produit].dateArchivage = new Date().toISOString();
+            stock[produit].raisonArchivage = raison || 'Non spécifiée';
+            
+            // Sauvegarder
+            sauvegarderDonnees();
+            afficherStock();
+            fermerModalArchivage();
+            
+            alert('✓ Produit archivé avec succès');
+        }
 
 
         function rechercherStock() {
