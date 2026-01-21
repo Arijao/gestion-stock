@@ -3141,6 +3141,15 @@
                     <div class="search-box">
                         <input type="text" id="search-stock" placeholder="🔍 Rechercher produit..." onkeyup="rechercherStock()">
                     </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <button id="btn-toggle-archives" onclick="toggleArchives()" style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-archive"></i>
+                            <span id="archives-btn-text">Voir les archivés</span>
+                            <span id="archives-count" style="background: #6b7280; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px;">0</span>
+                        </button>
+                    </div>
+
                     
                     <div class="table-container">
                         <table>
@@ -4311,9 +4320,10 @@
             // Collect all stock items
             const allItems = [];
             Object.keys(stock)
-                .filter(p => stock[p].actif !== false)  // ← Filtre: masquer les archivés
+                .filter(p => afficherArchives ? stock[p].actif === false : stock[p].actif !== false)  // ← Nouvelle condition
                 .sort()
                 .forEach(p => {
+
                 const s = stock[p];
                 const qte = getStockQty(p);
                 if(qte <= 0) return;
@@ -4360,30 +4370,56 @@
                 let badgeClass = 'stock-high';
                 if(item.qte < 5) badgeClass = 'stock-low';
                 else if(item.qte < 20) badgeClass = 'stock-medium';
-                
-                tbody.innerHTML += `<tr>
-                    <td>${item.produit}</td>
-                    <td style="text-align:right">${item.qte}</td>
-                    <td>${item.unite}</td>
-                    <td style="text-align:right">
-                        <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
-                        <small style="color:#666; font-size:11px">${nbLots} lot${nbLots>1?'s':''}</small>
-                        <button onclick="showLotDetails('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="margin-top:4px">📊 Détails FIFO</button>
-                    </td>
-                    <td style="text-align:right">${item.valeur.toLocaleString()} Ar</td>
-                    <td><span class="stock-badge ${badgeClass}">${item.qte <= 5 ? 'Faible' : item.qte <= 20 ? 'Moyen' : 'Bon'}</span></td>
-                    <td style="text-align:center">
-                        <div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap;">
-                            <button onclick="ouvrirModalModification('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#3b82f6; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Modifier">
-                                ✏️ Modifier
-                            </button>
-                            <button onclick="ouvrirModalArchivage('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#ef4444; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Archiver">
-                                📦 Archiver
-                            </button>
-                        </div>
-                    </td>
-                </tr>`;
 
+                // Adapter l'affichage selon si c'est archivé ou actif
+                if(afficherArchives) {
+                    // Affichage pour produit archivé
+                    tbody.innerHTML += `<tr style="background: #fef2f2; opacity: 0.8;">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;">ARCHIVÉ</span>
+                                <span>${item.produit}</span>
+                            </div>
+                            ${stock[item.produit].raisonArchivage ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Raison: ${stock[item.produit].raisonArchivage}</div>` : ''}
+                        </td>
+                        <td style="text-align:right">${item.qte}</td>
+                        <td>${item.unite}</td>
+                        <td style="text-align:right">
+                            <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
+                        </td>
+                        <td style="text-align:right">${item.valeur.toLocaleString()} Ar</td>
+                        <td><span class="stock-badge" style="background: #fee2e2; color: #991b1b;">Archivé</span></td>
+                        <td style="text-align:center">
+                            <button onclick="reactiverProduit('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background: #10b981; color: white; padding: 5px 12px; border-radius: 5px; cursor: pointer; border: none; font-size: 11px;" title="Réactiver">
+                                ↻ Réactiver
+                            </button>
+                        </td>
+                    </tr>`;
+                } else {
+                    // Affichage normal (votre code existant)
+                    tbody.innerHTML += `<tr>
+                        <td>${item.produit}</td>
+                        <td style="text-align:right">${item.qte}</td>
+                        <td>${item.unite}</td>
+                        <td style="text-align:right">
+                            <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
+                            <small style="color:#666; font-size:11px">${nbLots} lot${nbLots>1?'s':''}</small>
+                            <button onclick="showLotDetails('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="margin-top:4px">📊 Détails FIFO</button>
+                        </td>
+                        <td style="text-align:right">${item.valeur.toLocaleString()} Ar</td>
+                        <td><span class="stock-badge ${badgeClass}">${item.qte <= 5 ? 'Faible' : item.qte <= 20 ? 'Moyen' : 'Bon'}</span></td>
+                        <td style="text-align:center">
+                            <div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap;">
+                                <button onclick="ouvrirModalModification('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#3b82f6; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Modifier">
+                                    ✏️ Modifier
+                                </button>
+                                <button onclick="ouvrirModalArchivage('${item.produit.replace(/'/g, "\\'")}', event)" class="btn-mini" style="background:#ef4444; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; border:none; font-size:11px;" title="Archiver">
+                                    📦 Archiver
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
             });
             
             updateDashStockCard();
@@ -4433,6 +4469,13 @@
                 if(sel) sel.onchange = (e) => changeStockPerPage(e.target.value);
             }
 
+            // Mettre à jour le compteur d'archives
+            const nbArchives = Object.keys(stock).filter(p => stock[p].actif === false).length;
+            const archivesCount = document.getElementById('archives-count');
+            if(archivesCount) {
+                archivesCount.textContent = nbArchives;
+                archivesCount.style.display = nbArchives > 0 ? 'inline-block' : 'none';
+            }
 
         }
 
@@ -9084,6 +9127,46 @@
             console.log('⚠️ Mode hors ligne');
             // Optional: afficher notification
         });
+
+        // Variable globale pour gérer l'affichage des archives
+        let afficherArchives = false;
+
+        // Toggle entre produits actifs et archivés
+        function toggleArchives() {
+            afficherArchives = !afficherArchives;
+            afficherStock();
+            
+            // Mettre à jour le bouton
+            const btn = document.getElementById('archives-btn-text');
+            if(btn) {
+                btn.textContent = afficherArchives ? 'Voir les produits actifs' : 'Voir les archivés';
+            }
+        }
+
+        // Réactiver un produit archivé
+        function reactiverProduit(produit, event) {
+            if(event) event.stopPropagation();
+            
+            const confirmation = confirm(
+                `Réactiver le produit "${produit}" ?\n\n` +
+                `Il réapparaîtra dans le stock actif.`
+            );
+            
+            if(!confirmation) return;
+            
+            if(!stock[produit]) {
+                alert('Produit introuvable');
+                return;
+            }
+            
+            stock[produit].actif = true;
+            stock[produit].dateReactivation = new Date().toISOString();
+            
+            sauvegarderDonnees();
+            afficherStock();
+            
+            alert('✓ Produit réactivé avec succès');
+        }
 
     </script>
 </body>
