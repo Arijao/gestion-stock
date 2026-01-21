@@ -2411,167 +2411,6 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
-        /* ========== MODAL SÉLECTION FORMAT IMPRESSION ========== */
-        .format-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.75);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(4px);
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        .format-modal-overlay.active {
-            display: flex;
-        }
-
-        .format-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 35px;
-            width: 550px;
-            max-width: 90vw;
-            box-shadow: 0 24px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { 
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .format-modal h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #111827;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .format-modal > p {
-            color: #6b7280;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-
-        .format-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 25px;
-        }
-
-        .format-card {
-            border: 3px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            position: relative;
-        }
-
-        .format-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(59,130,246,0.25);
-        }
-
-        .format-card.selected {
-            border-color: #3b82f6;
-            background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
-            box-shadow: 0 8px 20px rgba(59,130,246,0.3);
-        }
-
-        .format-card.selected::after {
-            content: '✓';
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 28px;
-            height: 28px;
-            background: #3b82f6;
-            color: white;
-            border-radius: 999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 16px;
-        }
-
-        .format-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: #3b82f6;
-        }
-
-        .format-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #111827;
-        }
-
-        .format-desc {
-            font-size: 13px;
-            color: #6b7280;
-            line-height: 1.5;
-        }
-
-        .format-size {
-            display: inline-block;
-            background: #f3f4f6;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            color: #4b5563;
-            margin-top: 8px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .btn-cancel {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .btn-cancel:hover {
-            background: #e5e7eb;
-            transform: translateY(-2px);
-        }
-
-        /* Responsive mobile */
-        @media (max-width: 600px) {
-            .format-modal {
-                padding: 25px;
-                width: 95vw;
-            }
-            
-            .format-options {
-                grid-template-columns: 1fr;
-            }
-            
-            .format-icon {
-                font-size: 36px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -3568,57 +3407,7 @@
         </div>
     </div>
     
-    <!-- MODAL SÉLECTION FORMAT IMPRESSION -->
-    <div id="format-modal-overlay" class="format-modal-overlay">
-        <div class="format-modal">
-            <h2>
-                <i class="fa-solid fa-print"></i>
-                Choisir le format d'impression
-            </h2>
-            <p>Sélectionnez le format qui correspond à votre imprimante</p>
-            
-            <div class="format-options">
-                <!-- Option Ticket Thermique -->
-                <div class="format-card" data-format="ticket" onclick="selectFormat('ticket')">
-                    <div class="format-icon">🧾</div>
-                    <div class="format-name">Ticket Thermique</div>
-                    <div class="format-desc">
-                        Format compact pour imprimantes de caisse
-                    </div>
-                    <div class="format-size">80mm de largeur</div>
-                </div>
-                
-                <!-- Option A4 -->
-                <div class="format-card" data-format="a4" onclick="selectFormat('a4')">
-                    <div class="format-icon">📄</div>
-                    <div class="format-name">Format A4</div>
-                    <div class="format-desc">
-                        Facture professionnelle standard
-                    </div>
-                    <div class="format-size">210 × 297 mm</div>
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <button class="btn btn-cancel" onclick="closeFormatModal()">
-                    <i class="fa-solid fa-xmark"></i> Annuler
-                </button>
-                <button class="btn btn-primary" id="confirm-format-btn" onclick="confirmFormat()" disabled>
-                    <i class="fa-solid fa-check"></i> Générer PDF
-                </button>
-            </div>
-        </div>
-    </div>
-    <!-- CONTENEURS PDF CACHÉS -->
-    <!-- Format A4 -->
-    <div id="pdf-preview-a4" style="position:fixed; top:-10000px; left:-10000px; width:210mm; background:white; padding:15mm; font-family:Arial,sans-serif;">
-        <!-- Sera rempli dynamiquement par JavaScript -->
-    </div>
 
-    <!-- Format Ticket -->
-    <div id="pdf-preview-ticket" style="position:fixed; top:-10000px; left:-10000px; width:80mm; background:white; padding:5mm; font-family:'Courier New',monospace; font-size:10px;">
-        <!-- Sera rempli dynamiquement par JavaScript -->
-    </div>
     <script>
         /* ====== SIDEBAR ====== */
         function toggleSidebar(btn){
@@ -3641,11 +3430,8 @@
             if(btn) btn.classList.add('active');
         }
 
-        /* ====== LOGIQUE ORIGINELLE ====== */
- 
-        let selectedFormat = null; // 'ticket' ou 'a4'
-        let currentInvoiceType = null; // 'proforma', 'facture', ou 'bon'
-        let currentInvoiceData = null; // Données de la facture en cours
+        /* ====== LOGIQUE ORIGINELLE (copiée avy amin'ny paste.txt) ====== */
+
         let stock = {};
         let historique = [];
         let articlesAchat = [];
@@ -3666,9 +3452,6 @@
         let factureAchatDraft = null; // {name, mime, dataUrl, dateUpload}
         let demandesPrix = []; 
         let articlesDP = [];
-        let historiqueVentes = [];
-        let venteListe = [];
-
         // PAGINATION
         let stockPage = 1;
         let stockPerPage = 10;
@@ -3679,7 +3462,7 @@
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
  
-        
+
 
         // Window onload
         window.onload = async function() {
@@ -4142,6 +3925,8 @@
             if (t) t.textContent = 'Analyse en cours...';
         }
 
+
+        
         function mettreAJourSelect() {
             const select = document.getElementById('vente-produit');
             if(!select) return; // cas où select n'existe pas (tu n'en as pas besoin ici)
@@ -4307,8 +4092,7 @@
             const margeTot = totalVente - r.cogs;
             const margeUnit = margeTot / quantite;
 
-            // Créer l'objet article AVANT de push
-            const article = {
+            articlesVente.push({
                 produit: produit,
                 quantite: quantite,
                 prix: prix,
@@ -4317,15 +4101,14 @@
                 cogs: r.cogs,
                 margeTot: margeTot,
                 margeUnit: margeUnit
-            };
-            articlesVente.push(article);
+            });
+
             // vider champs (rehefa tsindrina ➕)
             document.getElementById('vente-search').value = '';
             document.getElementById('vente-produit-selected').value = '';
             document.getElementById('vente-stock-dispo').value = '';
             document.getElementById('vente-quantite').value = '';
             document.getElementById('vente-prix').value = '';
-            
             afficherArticlesVente();
         }
 
@@ -4635,7 +4418,9 @@
                 if(sel) sel.onchange = (e) => changeStockPerPage(e.target.value);
             }
 
+
         }
+
 
         function goToStockPage(page) {
             
@@ -4651,6 +4436,8 @@
             
             afficherStock();
         }
+
+
 
         function showLotDetails(produit, event) {
             if(event) event.stopPropagation();
@@ -4922,19 +4709,13 @@
                 const typeColor = h.type === 'achat' ? '#dc2626' : '#16a34a';
 
                 const btnVente = h.type === 'vente' ? `
-                    <button class="btn-compact" 
-                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'facture');" 
-                            title="Facture">
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'facture')" title="Facture">
                         <i class="fa-solid fa-file-invoice"></i>
                     </button>
-                    <button class="btn-compact" 
-                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'proforma');" 
-                            title="Proforma">
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'proforma')" title="Proforma">
                         <i class="fa-solid fa-file-lines"></i>
                     </button>
-                    <button class="btn-compact" 
-                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'bon');" 
-                            title="BL">
+                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'bon')" title="BL">
                         <i class="fa-solid fa-truck-fast"></i>
                     </button>
                 ` : '';
@@ -4998,7 +4779,7 @@
             afficherHistorique();
         }
 
-        // ==========  Filtres rapides ==========
+        // ========== FONCTIONS MANQUANTES : Filtres rapides ==========
         function appliquerFiltreRapide(type) {
             const searchInput = document.getElementById('search-historique');
 
@@ -5323,433 +5104,8 @@
             alert(msg);
         }
 
-        // ========== FONCTIONS MODAL SÉLECTION FORMAT Facture BL Proforma ==========
 
-        // Ouvrir le modal de sélection
-        function openFormatModal(invoiceType, invoiceData) {
-            console.log('🎯 openFormatModal appelé');
-            console.log('Type:', invoiceType);
-            console.log('Data:', invoiceData);
-            
-            // Vérifications
-            if (!invoiceData || !invoiceData.articles || !invoiceData.articles.length) {
-                console.error('❌ Données invalides:', invoiceData);
-                alert('Erreur: Aucun article dans la facture');
-                return;
-            }
-            
-            // Stocker les données globalement
-            currentInvoiceType = invoiceType;
-            currentInvoiceData = invoiceData;
-            selectedFormat = null;
-            
-            console.log('✅ Données stockées');
-            
-            // Réinitialiser les cartes
-            document.querySelectorAll('.format-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            //  Désactiver le bouton de confirmation
-            const confirmBtn = document.getElementById('confirm-format-btn');
-            if (confirmBtn) {
-                confirmBtn.disabled = true;
-            }
-            
-            // Afficher le modal
-            const overlay = document.getElementById('format-modal-overlay');
-            if (overlay) {
-                overlay.classList.add('active');
-                console.log('✅ Modal affiché');
-            } else {
-                console.error('❌ Modal overlay introuvable!');
-            }
-        }
 
-        // Fermer le modal
-        function closeFormatModal() {
-            document.getElementById('format-modal-overlay').classList.remove('active');
-            selectedFormat = null;
-            currentInvoiceType = null;
-            currentInvoiceData = null;
-        }
-
-        // Sélectionner un format
-        function selectFormat(format) {
-            selectedFormat = format;
-            
-            //  Retirer classe selected de toutes les cartes
-            document.querySelectorAll('.format-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // Trouver la carte cliquée via data-attribute
-            const clickedCard = document.querySelector(`[data-format="${format}"]`);
-            if (clickedCard) {
-                clickedCard.classList.add('selected');
-            }
-            
-            // Activer le bouton de confirmation
-            const confirmBtn = document.getElementById('confirm-format-btn');
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-            }
-        }
-
-        // Confirmer et générer le PDF
-        function confirmFormat() {
-            console.log('🔘 confirmFormat appelé');
-            console.log('Format sélectionné:', selectedFormat);
-            console.log('Type:', currentInvoiceType);
-            console.log('Data:', currentInvoiceData);
-            
-            if (!selectedFormat) {
-                alert('⚠️ Veuillez sélectionner un format');
-                return;
-            }
-            
-            if (!currentInvoiceType || !currentInvoiceData) {
-                console.error('❌ Données manquantes:', {
-                    type: currentInvoiceType,
-                    data: currentInvoiceData
-                });
-                alert('Erreur : données manquantes');
-                return;
-            }
-            
-            // Fermer le modal
-            closeFormatModal();
-            
-            // Générer le PDF avec le format choisi
-            try {
-                if (selectedFormat === 'ticket') {
-                    console.log('📄 Génération PDF Ticket...');
-                    genererPDFTicket(currentInvoiceType, currentInvoiceData);
-                } else if (selectedFormat === 'a4') {
-                    console.log('📄 Génération PDF A4...');
-                    genererPDFA4(currentInvoiceType, currentInvoiceData);
-                }
-            } catch (error) {
-                console.error('❌ Erreur génération PDF:', error);
-                alert('Erreur lors de la génération du PDF: ' + error.message);
-            }
-        }
-
-        // Fermer le modal si on clique en dehors
-        document.addEventListener('click', function(e) {
-            const overlay = document.getElementById('format-modal-overlay');
-            if (e.target === overlay) {
-                closeFormatModal();
-            }
-        });
-
-        // ========== GÉNÉRATION PDF FORMAT A4 ==========
-
-        function genererPDFA4(type, data) {
-            const container = document.getElementById('pdf-preview-a4');
-            
-            // Récupérer les infos entreprise depuis les champs de configuration
-            const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
-            const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
-            const telEntreprise = ''; // Pas de champ tel dans ta config
-            const emailEntreprise = ''; // Pas de champ email dans ta config
-            const nifEntreprise = document.getElementById('config-nif')?.value || '';
-            const statEntreprise = document.getElementById('config-stat')?.value || '';
-            const activiteEntreprise = document.getElementById('config-activite')?.value || '';
-            const rcEntreprise = document.getElementById('config-rc')?.value || '';
-            const responsableEntreprise = document.getElementById('config-responsable')?.value || '';
-            const banqueEntreprise = document.getElementById('config-banque')?.value || '';
-            const paiementEntreprise = document.getElementById('config-paiement')?.value || '';
-            
-            // Récupérer le logo si existe
-            let appLogoData = null;
-            const logoPreview = document.getElementById('logo-preview');
-            if (logoPreview && logoPreview.src && !logoPreview.src.includes('data:,')) {
-                appLogoData = logoPreview.src;
-            }
-            // Déterminer le titre selon le type
-            let titre = 'FACTURE';
-            if (type === 'proforma') titre = 'FACTURE PROFORMA';
-            if (type === 'bon') titre = 'BON DE LIVRAISON';
-            
-            // Calculer la date d'échéance
-            const dateFacture = new Date(data.date);
-            const delaiJours = parseInt(data.delai) || 30;
-            const dateEcheance = new Date(dateFacture);
-            dateEcheance.setDate(dateEcheance.getDate() + delaiJours);
-            
-            // Construire le HTML pour A4
-            let html = `
-                <div style="font-family: Arial, sans-serif; font-size: 12px; color: #1e293b;">
-                    
-                    <!-- En-tête avec logo et infos client -->
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                        
-                        <!-- Partie gauche : Logo + infos fournisseur -->
-                        <div style="flex: 1;">
-                            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
-                                ${appLogoData ? `<img src="${appLogoData}" style="width: 150px; height: auto; margin-bottom: 15px;">` : `<div style="font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 15px;">${nomEntreprise}</div>`}
-                                
-                                <div style="font-size: 10px; line-height: 1.8; color: #334155;">
-                                    <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Entreprise :</strong> ${nomEntreprise}</p>
-                                    ${activiteEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Activité :</strong> ${activiteEntreprise}</p>` : ''}
-                                    <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Adresse :</strong> ${adresseEntreprise}</p>
-                                    ${nifEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">NIF :</strong> ${nifEntreprise}</p>` : ''}
-                                    ${statEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">STAT :</strong> ${statEntreprise}</p>` : ''}
-                                    ${rcEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">RC :</strong> ${rcEntreprise}</p>` : ''}
-                                    ${responsableEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Responsable :</strong> ${responsableEntreprise}</p>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Partie droite : Infos client -->
-                        <div style="flex: 1; margin-left: 20px;">
-                            <div style="background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%); padding: 25px; border-radius: 16px; box-shadow: 0 8px 20px rgba(59,130,246,0.25); border: 3px solid #3b82f6;">
-                                <p style="margin: 8px 0; font-size: 13px; color: #1e293b; text-align: right;">
-                                    <strong style="font-weight: 800; color: #3b82f6; min-width: 100px; display: inline-block; text-align: right;">CLIENT :</strong> ${data.client}
-                                </p>
-                                <p style="margin: 8px 0; font-size: 13px; color: #1e293b; text-align: right;">
-                                    <strong style="font-weight: 800; color: #3b82f6; min-width: 100px; display: inline-block; text-align: right;">ADRESSE :</strong> ${data.adresse}
-                                </p>
-                                
-                                <div style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); padding: 12px 15px; border-radius: 10px; border-left: 5px solid #3b82f6; margin-top: 15px;">
-                                    <p style="margin: 0; font-size: 15px; font-weight: 900; color: #3730a3; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        ${titre} N° ${data.numero}
-                                    </p>
-                                    <p style="margin: 4px 0 0 0; font-size: 10px; color: #6366f1; font-weight: 600;">
-                                        Date : ${formatDate(data.date)}
-                                    </p>
-                                    ${type !== 'bon' ? `<p style="margin: 4px 0 0 0; font-size: 10px; color: #6366f1; font-weight: 600;">
-                                        Échéance : ${formatDate(dateEcheance.toISOString().split('T')[0])}
-                                    </p>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tableau des articles -->
-                    <table style="width: 100%; border-collapse: collapse; margin: 25px 0;">
-                        <thead>
-                            <tr>
-                                <th style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;">Description</th>
-                                <th style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase;">Qté</th>
-                                <th style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase;">Unité</th>
-                                <th style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase;">P.U.</th>
-                                <th style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase;">Montant</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            // Ajouter les lignes d'articles
-            data.articles.forEach((article, index) => {
-                const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
-                html += `
-                    <tr>
-                        <td style="border: 1px solid #e5e7eb; padding: 10px; background: ${bgColor}; font-size: 11px;">${article.produit}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; background: ${bgColor}; font-size: 11px;">${article.quantite}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; background: ${bgColor}; font-size: 11px;">${article.unite}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; background: ${bgColor}; font-size: 11px;">${formatNumber(article.prix)} Ar</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; background: ${bgColor}; font-size: 11px; font-weight: 600;">${formatNumber(article.quantite * article.prix)} Ar</td>
-                    </tr>
-                `;
-            });
-            
-            // Ligne de total
-            html += `
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="4" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 12px; text-align: right; font-size: 13px; font-weight: 700; color: #92400e;">TOTAL</td>
-                                <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 12px; text-align: right; font-size: 14px; font-weight: 700; color: #92400e;">${formatNumber(data.total)} Ar</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <!-- Pied de page -->
-                    <div style="margin-top: 35px; font-size: 12px; line-height: 1.8; color: #334155;">
-                        ${type !== 'bon' ? `
-                        <p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Délai de paiement :</strong> ${data.delai} jours</p>
-                        ${paiementEntreprise ? `<p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Mode de paiement :</strong> ${paiementEntreprise}</p>` : ''}
-                        ${banqueEntreprise ? `<p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Coordonnées bancaires :</strong> ${banqueEntreprise}</p>` : ''}
-                        ` : ''}
-                        <p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Merci de votre confiance !</strong></p>
-                        ${responsableEntreprise ? `<p style="margin: 12px 0; font-size: 11px; color: #6b7280;">Responsable : ${responsableEntreprise}</p>` : ''}
-                    </div>
-                    
-                    <div style="margin-top: 60px; text-align: right; font-weight: 700; color: #1e293b; font-size: 13px;">
-                        Signature
-                    </div>
-                </div>
-            `;
-            
-            container.innerHTML = html;
-            
-            // Générer le PDF avec html2canvas + jsPDF
-            setTimeout(() => {
-                html2canvas(container, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
-                }).then(canvas => {
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
-                    
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`${titre.replace(/ /g, '_')}_${data.numero}_${data.client}.pdf`);
-                });
-            }, 100);
-        }
-
-        // ========== GÉNÉRATION PDF FORMAT TICKET THERMIQUE ==========
-
-        function genererPDFTicket(type, data) {
-            const container = document.getElementById('pdf-preview-ticket');
-            
-            // Récupérer les infos entreprise depuis les champs de configuration
-            const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
-            const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
-            const telEntreprise = ''; // Pas de champ tel dans ta config
-            const emailEntreprise = ''; // Pas de champ email dans ta config
-            const nifEntreprise = document.getElementById('config-nif')?.value || '';
-            const statEntreprise = document.getElementById('config-stat')?.value || '';
-            const activiteEntreprise = document.getElementById('config-activite')?.value || '';
-            const rcEntreprise = document.getElementById('config-rc')?.value || '';
-            const responsableEntreprise = document.getElementById('config-responsable')?.value || '';
-            const banqueEntreprise = document.getElementById('config-banque')?.value || '';
-            const paiementEntreprise = document.getElementById('config-paiement')?.value || '';
-            
-            // Récupérer le logo si existe
-            let appLogoData = null;
-            const logoPreview = document.getElementById('logo-preview');
-            if (logoPreview && logoPreview.src && !logoPreview.src.includes('data:,')) {
-                appLogoData = logoPreview.src;
-            }
-            // Déterminer le titre selon le type
-            let titre = 'FACTURE';
-            if (type === 'proforma') titre = 'PROFORMA';
-            if (type === 'bon') titre = 'BON LIVRAISON';
-            
-            // Calculer la date d'échéance
-            const dateFacture = new Date(data.date);
-            const delaiJours = parseInt(data.delai) || 30;
-            const dateEcheance = new Date(dateFacture);
-            dateEcheance.setDate(dateEcheance.getDate() + delaiJours);
-            
-            // Construire le HTML pour ticket thermique (80mm)
-            let html = `
-                <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #000; line-height: 1.4;">
-                    
-                    <!-- En-tête centré -->
-                    <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
-                        ${appLogoData ? `<img src="${appLogoData}" style="width: 120px; height: auto; margin-bottom: 8px;">` : `<div style="font-size: 16px; font-weight: 700; margin-bottom: 5px;">${nomEntreprise}</div>`}
-                        
-                        <div style="font-size: 9px; margin-top: 5px;">
-                            ${adresseEntreprise}<br>
-                            ${activiteEntreprise ? `Activité: ${activiteEntreprise}<br>` : ''}
-                            ${nifEntreprise ? `NIF: ${nifEntreprise}<br>` : ''}
-                            ${statEntreprise ? `STAT: ${statEntreprise}<br>` : ''}
-                            ${rcEntreprise ? `RC: ${rcEntreprise}` : ''}
-                        </div>
-                    </div>
-                    
-                    <!-- Type de document -->
-                    <div style="text-align: center; font-size: 14px; font-weight: 700; margin: 10px 0; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0;">
-                        ${titre}
-                    </div>
-                    
-                    <!-- Infos document -->
-                    <div style="font-size: 9px; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
-                        <div style="margin: 3px 0;">N°: ${data.numero}</div>
-                        <div style="margin: 3px 0;">Date: ${formatDate(data.date)}</div>
-                        ${type !== 'bon' ? `<div style="margin: 3px 0;">Echeance: ${formatDate(dateEcheance.toISOString().split('T')[0])}</div>` : ''}
-                    </div>
-                    
-                    <!-- Infos client -->
-                    <div style="font-size: 9px; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
-                        <div style="font-weight: 700; margin-bottom: 3px;">CLIENT:</div>
-                        <div style="margin: 2px 0;">${data.client}</div>
-                        <div style="margin: 2px 0;">${data.adresse}</div>
-                    </div>
-                    
-                    <!-- Articles -->
-                    <div style="border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
-            `;
-            
-            // Ajouter chaque article
-            data.articles.forEach((article) => {
-                html += `
-                        <div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
-                            <div style="font-weight: 700; margin-bottom: 2px;">${article.produit}</div>
-                            <div style="display: flex; justify-content: space-between; font-size: 9px;">
-                                <span>${article.quantite} ${article.unite} x ${formatNumber(article.prix)} Ar</span>
-                                <span style="font-weight: 700;">${formatNumber(article.quantite * article.prix)} Ar</span>
-                            </div>
-                        </div>
-                `;
-            });
-            
-            html += `
-                    </div>
-                    
-                    <!-- Total -->
-                    <div style="font-size: 12px; font-weight: 700; text-align: right; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0; margin-bottom: 10px;">
-                        TOTAL: ${formatNumber(data.total)} Ar
-                    </div>
-                    
-                    <!-- Pied de page -->
-                    <div style="font-size: 8px; text-align: center; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 8px;">
-                        ${type !== 'bon' ? `<div style="margin: 3px 0;">Delai: ${data.delai} jours</div>` : ''}
-                        <div style="margin: 3px 0;">Merci de votre visite!</div>
-                        <div style="margin: 5px 0;">www.votresite.com</div>
-                    </div>
-                    
-                </div>
-            `;
-            
-            container.innerHTML = html;
-            
-            // Générer le PDF avec html2canvas + jsPDF (format ticket 80mm)
-            setTimeout(() => {
-                html2canvas(container, {
-                    scale: 3, // Plus haute résolution pour ticket
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                }).then(canvas => {
-                    const { jsPDF } = window.jspdf;
-                    // Format ticket: 80mm de largeur, hauteur auto
-                    const ticketWidth = 80; // mm
-                    const imgWidth = ticketWidth;
-                    const imgHeight = (canvas.height * ticketWidth) / canvas.width;
-                    
-                    const pdf = new jsPDF('p', 'mm', [ticketWidth, imgHeight]);
-                    
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                    pdf.save(`Ticket_${titre.replace(/ /g, '_')}_${data.numero}.pdf`);
-                });
-            }, 100);
-        }
-
-        // ========== FONCTIONS UTILITAIRES ==========
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-        }
         async function ouvrirFactureHistorique(h) {
             const p = h.pieces?.[0];
             if (!p?.fileKey) {
@@ -5932,6 +5288,8 @@
                 console.error('❌ Erreur sauvegarde:', e);
             }
         }
+
+
 
         async function chargerDonnees() {
             try {
@@ -6362,6 +5720,9 @@
             `;
         }
 
+
+
+
         function updateDashboard() {
 
             const stockData = (typeof stock !== 'undefined' && stock)
@@ -6617,6 +5978,8 @@
             datePicker.style.pointerEvents = 'none';
         }
 
+
+
         function updateDashStockCard(){
             const statusEl = document.getElementById('dash-stock-status');
             const barEl = document.getElementById('dash-stock-progress');
@@ -6792,6 +6155,8 @@
             });
         }
 
+
+
         function exporterDonnees() {
             const data = {
                 stock,
@@ -6833,6 +6198,7 @@
             reader.readAsText(file);
         }
 
+
         function confirmerResetComplet() {
             const confirmation = confirm(
                 '⚠️ ATTENTION ⚠️\n\n' +
@@ -6859,6 +6225,7 @@
                 resetCompletBaseDeDonnees();
             }
         }
+
 
         async function resetCompletBaseDeDonnees() {
             try {
@@ -7023,41 +6390,36 @@
             }
         }
 
-        //  Renommer paramètre pour clarté
-        function genererPDFDepuisHistorique(venteData, type) {
-            console.log('📄 Génération PDF:', type, venteData);
-            
-            //  Vérifier que c'est bien un objet
-            if (!venteData || typeof venteData !== 'object') {
-                console.error('❌ Données vente invalides:', venteData);
-                alert('Erreur: données vente manquantes');
+
+
+
+        function genererPDFDepuisHistorique(h, typeDoc){
+            if(h.type !== 'vente'){
                 return;
             }
-            
-            //  Récupérer articles (plusieurs noms possibles)
-            let articles = venteData.articles || venteData.liste || venteData.items || [];
-            
-            if (!Array.isArray(articles) || articles.length === 0) {
-                console.error('❌ Aucun article trouvé:', venteData);
-                alert('Aucun article dans cette vente');
-                return;
+
+            // Backup état actuel
+            const backupArticles = articlesVente.slice();
+            const clientBackup   = document.getElementById('vente-client').value;
+            const adrBackup      = document.getElementById('vente-adresse').value;
+            const numBackup      = document.getElementById('vente-numero').value;
+
+            // Ampidiro ao amin’ny “formulaire vente” vetivety ny données historique
+            articlesVente = h.articles.slice();
+            document.getElementById('vente-client').value  = h.tiers || '';
+            document.getElementById('vente-adresse').value = h.adresse || '';
+            if(h.numero){
+                document.getElementById('vente-numero').value = h.numero;
             }
-            
-            //  Préparer données au bon format
-            const invoiceData = {
-                numero: venteData.numero || venteData.num || 'N/A',
-                date: venteData.date || new Date().toISOString().split('T')[0],
-                client: venteData.tiers || venteData.client || 'Client',
-                adresse: venteData.adresse || '',
-                delai: venteData.delai || '30',
-                articles: articles,
-                total: venteData.total || 0
-            };
-            
-            console.log('✅ InvoiceData créé:', invoiceData);
-            
-            //  Ouvrir modal sélection format
-            openFormatModal(type, invoiceData);
+
+            // Génération PDF (typeDoc = 'facture' | 'proforma' | 'bon')
+            genererPDFVente(typeDoc);
+
+            // Averina amin’ny état taloha
+            articlesVente = backupArticles;
+            document.getElementById('vente-client').value  = clientBackup;
+            document.getElementById('vente-adresse').value = adrBackup;
+            document.getElementById('vente-numero').value  = numBackup;
         }
 
 
@@ -7077,55 +6439,20 @@
         }
 
         function genererPDFVente(type) {
-            // Debug : afficher venteListe
-            console.log('Type:', type);
-            console.log('venteListe:', venteListe);
-            console.log('Longueur venteListe:', venteListe ? venteListe.length : 'undefined');
-            
-            // Vérifier qu'il y a des articles (avec plusieurs noms possibles)
-            let articles = venteListe || window.venteListe || [];
-            
-            if (!articles || articles.length === 0) {
-                alert('Aucun article dans la vente. Veuillez d\'abord ajouter des articles.');
-                console.error('venteListe est vide ou undefined');
+            if(!articlesVente.length) {
+                alert('Aucun article');
                 return;
             }
-            
-            // Vérifier les champs requis
-            const numero = document.getElementById('vente-numero')?.value;
-            const date = document.getElementById('vente-date')?.value;
-            const client = document.getElementById('vente-client')?.value;
-            const adresse = document.getElementById('vente-adresse')?.value;
-            
-            if (!numero || !date || !client) {
-                alert('Veuillez remplir tous les champs obligatoires (Numéro, Date, Client)');
-                return;
-            }
-            
-            // Calculer le total
-            let total = 0;
-            if (typeof calculerTotalVente === 'function') {
-                total = calculerTotalVente();
-            } else {
-                // Calcul manuel si la fonction n'existe pas
-                total = articles.reduce((sum, art) => sum + (art.prix * art.quantite), 0);
-            }
-            
-            // Préparer les données de la facture
-            const invoiceData = {
-                numero: numero,
-                date: date,
-                client: client,
-                adresse: adresse,
-                delai: document.getElementById('vente-delai')?.value || '30',
-                articles: articles,
-                total: total
-            };
-            
-            console.log('InvoiceData créé:', invoiceData);
-            
-            // Ouvrir le modal de sélection de format
-            openFormatModal(type, invoiceData);
+            genererPDF({
+                type: type,
+                operation: 'vente',
+                date: document.getElementById('vente-date').value,
+                numero: document.getElementById('vente-numero').value,
+                tiers: document.getElementById('vente-client').value,
+                adresse: document.getElementById('vente-adresse').value,
+                articles: articlesVente,
+                total: articlesVente.reduce((s, a) => s + a.total, 0)
+            });
         }
         
         function genererPDF(data) {
@@ -8409,17 +7736,15 @@
                 ${sectionPaiement}
                 
                 ${h.type === 'vente' ? `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;">
-                    <button class="btn btn-pdf" 
-                            onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')">
-                        📄 Facture
+                    <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')" style="flex: 1;">
+                        <i class="fa-solid fa-file-invoice"></i> Facture
                     </button>
-                    <button class="btn btn-info" 
-                            onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')">
-                        🚚 Bon livraison
+                    <button class="btn btn-info" onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')" style="flex: 1;">
+                        <i class="fa-solid fa-truck"></i> Bon livraison
                     </button>
-                </div>
-            ` : ''}
+                    </div>
+                ` : ''}
                 </div>
             `;
             
@@ -9074,17 +8399,6 @@
             // Optional: afficher notification
         });
 
-        // Event listener bouton ajouter article vente
-        window.addEventListener('DOMContentLoaded', function() {
-            const btnAjouterVente = document.getElementById('btn-ajouter-article-vente');
-            if (btnAjouterVente) {
-                btnAjouterVente.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('🔘 Ajout article vente...');
-                    ajouterArticleVente();
-                });
-            }
-        });
     </script>
 </body>
 </html>
