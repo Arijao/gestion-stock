@@ -3579,7 +3579,7 @@
             
             <div class="format-options">
                 <!-- Option Ticket Thermique -->
-                <div class="format-card" onclick="selectFormat('ticket')">
+                <div class="format-card" data-format="ticket" onclick="selectFormat('ticket')">
                     <div class="format-icon">🧾</div>
                     <div class="format-name">Ticket Thermique</div>
                     <div class="format-desc">
@@ -3589,7 +3589,7 @@
                 </div>
                 
                 <!-- Option A4 -->
-                <div class="format-card" onclick="selectFormat('a4')">
+                <div class="format-card" data-format="a4" onclick="selectFormat('a4')">
                     <div class="format-icon">📄</div>
                     <div class="format-name">Format A4</div>
                     <div class="format-desc">
@@ -4318,7 +4318,7 @@
                 margeTot: margeTot,
                 margeUnit: margeUnit
             };
-
+            articlesVente.push(article);
             // vider champs (rehefa tsindrina ➕)
             document.getElementById('vente-search').value = '';
             document.getElementById('vente-produit-selected').value = '';
@@ -5327,20 +5327,43 @@
 
         // Ouvrir le modal de sélection
         function openFormatModal(invoiceType, invoiceData) {
+            console.log('🎯 openFormatModal appelé');
+            console.log('Type:', invoiceType);
+            console.log('Data:', invoiceData);
+            
+            // Vérifications
+            if (!invoiceData || !invoiceData.articles || !invoiceData.articles.length) {
+                console.error('❌ Données invalides:', invoiceData);
+                alert('Erreur: Aucun article dans la facture');
+                return;
+            }
+            
+            // Stocker les données globalement
             currentInvoiceType = invoiceType;
             currentInvoiceData = invoiceData;
             selectedFormat = null;
+            
+            console.log('✅ Données stockées');
             
             // Réinitialiser les cartes
             document.querySelectorAll('.format-card').forEach(card => {
                 card.classList.remove('selected');
             });
             
-            // Désactiver le bouton de confirmation
-            document.getElementById('confirm-format-btn').disabled = true;
+            //  Désactiver le bouton de confirmation
+            const confirmBtn = document.getElementById('confirm-format-btn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+            }
             
             // Afficher le modal
-            document.getElementById('format-modal-overlay').classList.add('active');
+            const overlay = document.getElementById('format-modal-overlay');
+            if (overlay) {
+                overlay.classList.add('active');
+                console.log('✅ Modal affiché');
+            } else {
+                console.error('❌ Modal overlay introuvable!');
+            }
         }
 
         // Fermer le modal
@@ -5355,22 +5378,42 @@
         function selectFormat(format) {
             selectedFormat = format;
             
-            // Retirer la classe selected de toutes les cartes
+            //  Retirer classe selected de toutes les cartes
             document.querySelectorAll('.format-card').forEach(card => {
                 card.classList.remove('selected');
             });
             
-            // Ajouter la classe selected à la carte cliquée
-            event.currentTarget.classList.add('selected');
+            // Trouver la carte cliquée via data-attribute
+            const clickedCard = document.querySelector(`[data-format="${format}"]`);
+            if (clickedCard) {
+                clickedCard.classList.add('selected');
+            }
             
             // Activer le bouton de confirmation
-            document.getElementById('confirm-format-btn').disabled = false;
+            const confirmBtn = document.getElementById('confirm-format-btn');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+            }
         }
 
         // Confirmer et générer le PDF
         function confirmFormat() {
-            if (!selectedFormat || !currentInvoiceType || !currentInvoiceData) {
-                alert('Erreur : format ou données manquantes');
+            console.log('🔘 confirmFormat appelé');
+            console.log('Format sélectionné:', selectedFormat);
+            console.log('Type:', currentInvoiceType);
+            console.log('Data:', currentInvoiceData);
+            
+            if (!selectedFormat) {
+                alert('⚠️ Veuillez sélectionner un format');
+                return;
+            }
+            
+            if (!currentInvoiceType || !currentInvoiceData) {
+                console.error('❌ Données manquantes:', {
+                    type: currentInvoiceType,
+                    data: currentInvoiceData
+                });
+                alert('Erreur : données manquantes');
                 return;
             }
             
@@ -5378,10 +5421,17 @@
             closeFormatModal();
             
             // Générer le PDF avec le format choisi
-            if (selectedFormat === 'ticket') {
-                genererPDFTicket(currentInvoiceType, currentInvoiceData);
-            } else if (selectedFormat === 'a4') {
-                genererPDFA4(currentInvoiceType, currentInvoiceData);
+            try {
+                if (selectedFormat === 'ticket') {
+                    console.log('📄 Génération PDF Ticket...');
+                    genererPDFTicket(currentInvoiceType, currentInvoiceData);
+                } else if (selectedFormat === 'a4') {
+                    console.log('📄 Génération PDF A4...');
+                    genererPDFA4(currentInvoiceType, currentInvoiceData);
+                }
+            } catch (error) {
+                console.error('❌ Erreur génération PDF:', error);
+                alert('Erreur lors de la génération du PDF: ' + error.message);
             }
         }
 
@@ -9024,6 +9074,17 @@
             // Optional: afficher notification
         });
 
+        // Event listener bouton ajouter article vente
+        window.addEventListener('DOMContentLoaded', function() {
+            const btnAjouterVente = document.getElementById('btn-ajouter-article-vente');
+            if (btnAjouterVente) {
+                btnAjouterVente.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🔘 Ajout article vente...');
+                    ajouterArticleVente();
+                });
+            }
+        });
     </script>
 </body>
 </html>
