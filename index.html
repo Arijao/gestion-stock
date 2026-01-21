@@ -3136,8 +3136,7 @@
                             </div>
                         </div>
                         
-                        <!-- ✅ BOUTON EN BAS À DROITE -->
-                        <!-- BOUTON VISIBLE MAIS DOUX -->
+                        <!--  BOUTON EN BAS À DROITE -->
                         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
                             <button onclick="ajouterArticleVente()" 
                                     style="background: #f3f4f6; 
@@ -6512,20 +6511,30 @@
 
         function genererPDFVente(type) {
             if(!articlesVente.length) {
-                alert('Aucun article');
+                alert("Aucun article");
                 return;
             }
-            genererPDF({
+            
+            // Préparer les données
+            const data = {
                 type: type,
-                operation: 'vente',
-                date: document.getElementById('vente-date').value,
-                numero: document.getElementById('vente-numero').value,
-                tiers: document.getElementById('vente-client').value,
-                adresse: document.getElementById('vente-adresse').value,
+                operation: "vente",
+                date: document.getElementById("vente-date").value,
+                numero: document.getElementById("vente-numero").value,
+                tiers: document.getElementById("vente-client").value,
+                adresse: document.getElementById("vente-adresse").value,
                 articles: articlesVente,
-                total: articlesVente.reduce((s, a) => s + a.total, 0)
-            });
+                total: articlesVente.reduce((s,a)=>s+a.total, 0)
+            };
+            
+            // Remplir le container pour que genererPDFFormatThermal() puisse lire les données
+            document.getElementById("pdf-preview-container").setAttribute('data-numero', data.numero);
+            document.getElementById("pdf-preview-container").setAttribute('data-tiers', data.tiers);
+            
+            // Afficher le modal de sélection de format
+            afficherModalChoixFormat(data);
         }
+
         
         function genererPDF(data) {
             const { jsPDF } = window.jspdf;
@@ -8531,22 +8540,105 @@
             }
         }
 
+        // ===== FONCTION: Afficher modal de confirmation =====
+        function afficherModalConfirmationThermal() {
+            const confirmation = confirm(`⚠️ Exporter en format THERMIQUE 80mm?\n\nLe contenu sera optimisé pour imprimante thermique.`);
+            if (confirmation) {
+                genererPDFFormatThermal();
+            }
+        }
+
+        // ===== FONCTION: Afficher modal avec 2 formats =====
+        function afficherModalChoixFormat(data) {
+            let modal = document.getElementById('format-selector-modal-thermal');
+            
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'format-selector-modal-thermal';
+                modal.style.cssText = `
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.6);
+                    z-index: 10000;
+                    justify-content: center;
+                    align-items: center;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: 500px; width: 90%;">
+                        <h3 style="margin-top: 0; color: #333; margin-bottom: 20px;">📄 Choisir le format d'export</h3>
+                        <p style="color: #666; margin-bottom: 20px;">Sélectionnez le format adapté à votre imprimante</p>
+                        
+                        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <button onclick="fermerModalFormat(); genererPDFA4();" 
+                                style="flex: 1; padding: 15px; border: 2px solid #4CAF50; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                                📋 Format A4<br><small style="font-weight: normal; font-size: 12px;">Complet</small>
+                            </button>
+                            <button onclick="fermerModalFormat(); genererPDFFormatThermal();" 
+                                style="flex: 1; padding: 15px; border: 2px solid #2196F3; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                                🖨️ Format 80mm<br><small style="font-weight: normal; font-size: 12px;">Thermique</small>
+                            </button>
+                        </div>
+                        
+                        <button onclick="fermerModalFormat();" 
+                            style="width: 100%; padding: 10px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
+                            ✗ Annuler
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            // Stocker les données pour l'export
+            window.pdfDataEnCours = arguments[0]; // Récupère le paramètre data
+            modal.style.display = 'flex';
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    fermerModalFormat();
+                }
+            };
+        }
+
+        // ===== FONCTION: Fermer modal =====
+        function fermerModalFormat() {
+            const modal = document.getElementById('format-selector-modal-thermal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            // Nettoyer les données stockées
+            window.pdfDataEnCours = null;
+        }
+        // ===== FONCTION: Export A4 (utilise genererPDF existante) =====
+        function genererPDFA4() {
+            // Récupérer les données stockées
+            const data = window.pdfDataEnCours;
+            
+            if (!data) {
+                alert('Erreur: Aucune donnée à exporter');
+                return;
+            }
+            
+            // Appeler la fonction genererPDF existante (votre code original)
+            genererPDF(data);
+        }
+
+
         // ========== GÉNÉRER PDF THERMIQUE 80MM ==========
         function genererPDFFormatThermal() {
             const { jsPDF } = window.jspdf;
-            const element = document.getElementById("pdf-preview-container");
-
-            // Récupérer les données du formulaire
+            
+            // ÉTAPE 1: Récupérer configuration depuis les champs
+            const config = obtenirConfigurationEntreprise();
+            
+            // ÉTAPE 2: Récupérer les données du document
             let titreDoc = document.querySelector('#pdf-preview-container h2')?.textContent || 'FACTURE';
             let numero = document.querySelector('#pdf-preview-container')?.getAttribute('data-numero') || '';
             let tiers = document.querySelector('#pdf-preview-container [data-tiers]')?.getAttribute('data-tiers') || 'Client';
-            let modePaiement = document.querySelector('#pdf-preview-container [data-mode-paiement]')?.textContent || 'Non spécifié';
-
-            // Créer le contenu thermique
-            const thermalContainer = document.createElement('div');
-            thermalContainer.style.cssText = 'width: 80mm; padding: 5mm; background: white; color: black; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.2;';
-
-            // Récupérer les articles du tableau
+            
+            // ÉTAPE 3: Récupérer les articles du tableau
             const lignesArticles = document.querySelectorAll('#pdf-preview-container tbody tr');
             let articles = [];
             let totalGeneral = 0;
@@ -8554,77 +8646,128 @@
             lignesArticles.forEach(ligne => {
                 const cells = ligne.querySelectorAll('td');
                 if (cells.length >= 4) {
-                    const nom = cells[0]?.textContent || '';
-                    const qte = parseFloat(cells[1]?.textContent) || 0;
-                    const prix = parseFloat(cells[2]?.textContent.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
-                    const montant = parseFloat(cells[3]?.textContent.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
+                    const nom = cells[0]?.textContent?.trim() || '';
+                    const qte = parseFloat(cells[1]?.textContent?.trim()) || 0;
+                    
+                    // Extraction du prix
+                    let prixText = cells[2]?.textContent?.trim() || '0';
+                    let prix = parseFloat(prixText.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
+                    
+                    // Extraction du montant
+                    let montantText = cells[3]?.textContent?.trim() || '0';
+                    let montant = parseFloat(montantText.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
 
-                    if (nom && montant) {
-                        articles.push({ nom, qte, prix, montant });
+                    if (nom && montant > 0) {
+                        articles.push({ 
+                            nom: nom.substring(0, 30), // Limiter à 30 caractères pour largeur
+                            qte: qte.toFixed(2),
+                            prix: prix.toFixed(0),
+                            montant: montant 
+                        });
                         totalGeneral += montant;
                     }
                 }
             });
 
-            // Construire le HTML thermique
-            let html = `
-                <div style="text-align: center; width: 100%; word-wrap: break-word; font-size: 10px;">
-                    <!-- En-tête -->
-                    <div style="border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
-                        <strong style="font-size: 11px;">` + (JSON.parse(localStorage.getItem('entreprise') || '{}').nom || 'ENTREPRISE') + `</strong>
-                        <div style="font-size: 9px;">` + (JSON.parse(localStorage.getItem('entreprise') || '{}').adresse || '') + `</div>
-                    </div>
-
-                    <!-- Infos document -->
-                    <div style="font-size: 10px; margin-bottom: 5px; text-align: center;">
-                        <strong>` + titreDoc + `</strong>
-                        <div>N°: ` + numero + `</div>
-                        <div>` + new Date().toLocaleDateString('fr-FR') + `</div>
-                    </div>
-
-                    <!-- Tiers -->
-                    <div style="font-size: 9px; margin-bottom: 5px; text-align: left; border-bottom: 1px dashed #000; padding-bottom: 5px;">
-                        <strong>` + tiers + `</strong>
-                    </div>
-
-                    <!-- Articles -->
-                    <div style="font-size: 9px; margin-bottom: 5px; border-bottom: 1px dashed #000; padding-bottom: 5px;">
+            // ÉTAPE 4: Créer le conteneur thermique OPTIMISÉ EN LARGEUR
+            const thermalContainer = document.createElement('div');
+            thermalContainer.style.cssText = `
+                width: 74mm;
+                padding: 2mm;
+                background: white;
+                color: black;
+                font-family: 'Courier New', monospace;
+                font-size: 9px;
+                line-height: 1.35;
+                margin: 0;
+                box-sizing: border-box;
+                overflow: hidden;
+                text-align: center;
             `;
 
-            articles.forEach(article => {
-                html += `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                            <span style="flex: 1;">` + article.nom + `</span>
-                            <span>` + article.qte + `×` + article.prix + `</span>
+            // ÉTAPE 5: Construire le HTML thermique OPTIMISÉ
+            let html = `
+                <div style="width: 100%; word-wrap: break-word; text-align: center;">
+                    
+                    <!-- EN-TÊTE (DEPUIS CONFIG) -->
+                    <div style="border-bottom: 1px solid #000; padding: 2px 0; margin-bottom: 3px; font-size: 8px;">
+                        <div style="font-weight: bold; font-size: 9px; margin-bottom: 1px;">
+                            ${config.nom}
                         </div>
-                        <div style="text-align: right; margin-bottom: 3px; font-weight: bold;">
-                            ` + Math.round(article.montant).toLocaleString('fr-FR') + ` Ar
+                        ${config.adresse ? `<div style="font-size: 7px; word-break: break-word;">${config.adresse}</div>` : ''}
+                        ${config.telephone ? `<div style="font-size: 7px;">Tel: ${config.telephone}</div>` : ''}
+                    </div>
+                    
+                    <!-- INFO DOCUMENT -->
+                    <div style="font-size: 8px; margin-bottom: 3px; margin-top: 2px;">
+                        <strong>${titreDoc}</strong><br>
+                        N°: ${numero}<br>
+                        <span style="font-size: 7px;">${new Date().toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    
+                    <!-- SÉPARATION -->
+                    <div style="border-bottom: 1px dashed #000; margin: 2px 0;"></div>
+                    
+                    <!-- CLIENT -->
+                    <div style="font-size: 8px; text-align: left; margin: 2px 2px; padding-bottom: 2px;">
+                        <strong>Client:</strong> ${tiers}
+                    </div>
+                    
+                    <!-- SÉPARATION -->
+                    <div style="border-bottom: 1px dashed #000; margin: 2px 0;"></div>
+                    
+                    <!-- ARTICLES OPTIMISÉS (LARGEUR CONTRÔLÉE) -->
+                    <div style="font-size: 7px; text-align: left; margin: 2px 2px; padding-bottom: 2px;">
+            `;
+            
+            articles.forEach(article => {
+                // Formater l'article sur plusieurs lignes pour éviter le débordement
+                html += `
+                        <div style="margin-bottom: 2px;">
+                            <div style="word-wrap: break-word; font-weight: bold; margin-bottom: 1px;">
+                                ${article.nom}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 6px; padding-right: 2px;">
+                                <span>${article.qte}× ${article.prix}Ar</span>
+                                <span>${Math.round(article.montant).toLocaleString('fr-FR')}Ar</span>
+                            </div>
                         </div>
                 `;
             });
-
+            
             html += `
                     </div>
-
-                    <!-- Total -->
-                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px; text-align: right;">
-                        Total: ` + Math.round(totalGeneral).toLocaleString('fr-FR') + ` Ar
+                    
+                    <!-- SÉPARATION -->
+                    <div style="border-bottom: 1px solid #000; margin: 2px 0;"></div>
+                    
+                    <!-- TOTAL (VISIBLE ET COMPLET) -->
+                    <div style="font-size: 9px; font-weight: bold; text-align: right; margin: 3px 2px; padding-top: 2px;">
+                        Total: ${Math.round(totalGeneral).toLocaleString('fr-FR')}Ar
                     </div>
-
-                    <!-- Mode paiement -->
-                    <div style="font-size: 9px; margin-bottom: 5px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
-                        <strong>Mode paiement:</strong> ` + modePaiement + `
+                    
+                    <!-- MODE PAIEMENT (DEPUIS CONFIG) -->
+                    <div style="font-size: 7px; text-align: center; margin: 2px 0; padding: 2px;">
+                        <strong>Paiement:</strong> ${config.paiement}
                     </div>
-
-                    <!-- Remerciement -->
-                    <div style="font-size: 10px; margin-top: 8px; text-align: center; font-weight: bold;">
+                    
+                    <!-- BANQUE SI EXISTANTE (DEPUIS CONFIG) -->
+                    ${config.banque ? `
+                        <div style="font-size: 7px; text-align: center; margin: 1px 0;">
+                            Banque: ${config.banque}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- MESSAGE REMERCIEMENT -->
+                    <div style="font-size: 8px; text-align: center; font-weight: bold; margin: 4px 0; padding: 3px; background: #f5f5f5; border-radius: 2px;">
                         🙏 Merci!
                     </div>
-
-                    <!-- Pied de page -->
-                    <div style="font-size: 8px; margin-top: 5px; text-align: center; color: #666;">
-                        ` + new Date().toLocaleString('fr-FR') + `
+                    
+                    <!-- PIED DE PAGE -->
+                    <div style="font-size: 6px; text-align: center; color: #666; margin-top: 3px; border-top: 1px dotted #999; padding-top: 2px;">
+                        ${new Date().toLocaleTimeString('fr-FR')}
                     </div>
+                    
                 </div>
             `;
 
@@ -8633,24 +8776,52 @@
             thermalContainer.style.left = '-9999px';
             document.body.appendChild(thermalContainer);
 
-            // Convertir en image avec html2canvas
+            // ÉTAPE 6: Convertir en PDF avec dimensions DYNAMIQUES
             html2canvas(thermalContainer, { 
                 scale: 2, 
                 useCORS: true, 
                 logging: false, 
                 backgroundColor: '#ffffff',
-                width: 226 // 80mm ≈ 226px
+                width: 210 // 74mm en pixels (plus précis)
             }).then(canvas => {
                 const imgData = canvas.toDataURL("image/png");
-                const pdfHeight = canvas.height * 80 / canvas.width;
-                const pdf = new jsPDF("p", "mm", [80, pdfHeight]);
-                pdf.addImage(imgData, "PNG", 0, 0, 80, pdfHeight);
-                pdf.save(titreDoc.replace(/ /g, '_') + '_' + numero + '_thermal.pdf');
-
+                
+                // ÉTAPE 7: Calculer hauteur proportionnellement
+                const pdfWidthMM = 80;
+                const pdfHeightMM = (canvas.height * pdfWidthMM) / canvas.width; // Hauteur adaptée!
+                
+                // ÉTAPE 8: Créer PDF avec dimensions calculées
+                const pdf = new jsPDF("p", "mm", [pdfWidthMM, pdfHeightMM + 3]); // +3mm sécurité
+                pdf.addImage(imgData, "PNG", 0, 0, pdfWidthMM, pdfHeightMM);
+                
+                // ÉTAPE 9: Sauvegarder avec timestamp
+                const nomFichier = `${titreDoc.replace(/ /g, '_')}_${numero}_80mm_${new Date().getTime()}.pdf`;
+                pdf.save(nomFichier);
+                
                 // Nettoyer
                 document.body.removeChild(thermalContainer);
+                console.log('PDF thermique 80mm généré:', nomFichier);
+            }).catch(err => {
+                console.error('❌ Erreur export thermique:', err);
+                if (document.body.contains(thermalContainer)) {
+                    document.body.removeChild(thermalContainer);
+                }
+                alert('Erreur lors de la génération du PDF thermique');
             });
         }
+
+        // ===== NOUVELLE FONCTION: Récupérer configuration dynamique =====
+        function obtenirConfigurationEntreprise() {
+            return {
+                nom: document.getElementById('config-nom')?.value?.trim() || 'ENTREPRISE',
+                adresse: document.getElementById('config-adresse')?.value?.trim() || '',
+                telephone: document.getElementById('config-telephone')?.value?.trim() || '',
+                paiement: document.getElementById('config-paiement')?.value?.trim() || 'Non spécifié',
+                banque: document.getElementById('config-banque')?.value?.trim() || ''
+            };
+        }
+
+
     </script>
 </body>
 </html>
