@@ -6509,6 +6509,10 @@
             };
         }
         
+        function formatMontantAvecEspaces(nombre) {
+            return nombre.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
         function genererPDFThermal(data) {
             const { jsPDF } = window.jspdf;
             
@@ -6540,7 +6544,7 @@
             let y = 5; // Position verticale de départ
             const centerX = 40; // Centre horizontal (80mm / 2)
             const leftMargin = 3;
-            const rightMargin = 77;
+            const rightMargin = 75;
             const contentWidth = 74; // Largeur utilisable (80 - marges)
             
             // En-tête : Nom de l'entreprise (centré, gras)
@@ -6622,9 +6626,9 @@
                 } else {
                     // Facture/Proforma : quantité, prix, montant
                     const montant = article.quantite * article.prix;
-                    const detailText = `${article.quantite} ${article.unite} x ${article.prix.toLocaleString()} Ar`;
-                    const montantText = `${montant.toLocaleString()} Ar`;
-                    
+                    const detailText = `${article.quantite} ${article.unite} x ${formatMontantAvecEspaces(article.prix)} Ar`;
+                    const montantText = `${formatMontantAvecEspaces(montant)} Ar`;
+
                     pdf.text(detailText, leftMargin + 2, y);
                     pdf.text(montantText, rightMargin, y, { align: 'right' });
                 }
@@ -6643,7 +6647,8 @@
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'bold');
                 pdf.text('TOTAL:', leftMargin, y);
-                pdf.text(`${total.toLocaleString()} Ar`, rightMargin, y, { align: 'right' });
+                pdf.text(`${formatMontantAvecEspaces(total)} Ar`, rightMargin, y, { align: 'right' });
+
                 y += 6;
             }
             
