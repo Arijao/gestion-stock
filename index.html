@@ -4307,7 +4307,8 @@
             const margeTot = totalVente - r.cogs;
             const margeUnit = margeTot / quantite;
 
-            articlesVente.push({
+            // Créer l'objet article AVANT de push
+            const article = {
                 produit: produit,
                 quantite: quantite,
                 prix: prix,
@@ -4316,7 +4317,7 @@
                 cogs: r.cogs,
                 margeTot: margeTot,
                 margeUnit: margeUnit
-            });
+            };
 
             // vider champs (rehefa tsindrina ➕)
             document.getElementById('vente-search').value = '';
@@ -4324,7 +4325,7 @@
             document.getElementById('vente-stock-dispo').value = '';
             document.getElementById('vente-quantite').value = '';
             document.getElementById('vente-prix').value = '';
-            venteListe.push(article);
+            
             afficherArticlesVente();
         }
 
@@ -4921,13 +4922,19 @@
                 const typeColor = h.type === 'achat' ? '#dc2626' : '#16a34a';
 
                 const btnVente = h.type === 'vente' ? `
-                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'facture')" title="Facture">
+                    <button class="btn-compact" 
+                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'facture');" 
+                            title="Facture">
                         <i class="fa-solid fa-file-invoice"></i>
                     </button>
-                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'proforma')" title="Proforma">
+                    <button class="btn-compact" 
+                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'proforma');" 
+                            title="Proforma">
                         <i class="fa-solid fa-file-lines"></i>
                     </button>
-                    <button class="btn-compact" onclick="genererPDFDepuisHistorique(historique[${originalIdx}],'bon')" title="BL">
+                    <button class="btn-compact" 
+                            onclick="window._tempVente = historique[${originalIdx}]; genererPDFDepuisHistorique(window._tempVente, 'bon');" 
+                            title="BL">
                         <i class="fa-solid fa-truck-fast"></i>
                     </button>
                 ` : '';
@@ -6966,48 +6973,41 @@
             }
         }
 
-        function genererPDFDepuisHistorique(index) {
-            const vente = historiqueVentes[index];
+        //  Renommer paramètre pour clarté
+        function genererPDFDepuisHistorique(venteData, type) {
+            console.log('📄 Génération PDF:', type, venteData);
             
-            // Debug : afficher la structure des données
-            console.log('Vente récupérée:', vente);
-            
-            if (!vente) {
-                alert('Vente introuvable à l\'index ' + index);
+            //  Vérifier que c'est bien un objet
+            if (!venteData || typeof venteData !== 'object') {
+                console.error('❌ Données vente invalides:', venteData);
+                alert('Erreur: données vente manquantes');
                 return;
             }
             
-            // Vérifier les articles de différentes manières possibles
-            let articles = [];
-            if (vente.articles && Array.isArray(vente.articles)) {
-                articles = vente.articles;
-            } else if (vente.liste && Array.isArray(vente.liste)) {
-                articles = vente.liste;
-            } else if (vente.items && Array.isArray(vente.items)) {
-                articles = vente.items;
-            }
+            //  Récupérer articles (plusieurs noms possibles)
+            let articles = venteData.articles || venteData.liste || venteData.items || [];
             
-            if (articles.length === 0) {
-                alert('Aucun article trouvé dans cette vente');
-                console.log('Structure de vente:', Object.keys(vente));
+            if (!Array.isArray(articles) || articles.length === 0) {
+                console.error('❌ Aucun article trouvé:', venteData);
+                alert('Aucun article dans cette vente');
                 return;
             }
             
-            // Préparer les données au bon format
+            //  Préparer données au bon format
             const invoiceData = {
-                numero: vente.numero || vente.num || `V${String(index + 1).padStart(4, '0')}`,
-                date: vente.date || new Date().toISOString().split('T')[0],
-                client: vente.client || 'Client',
-                adresse: vente.adresse || '',
-                delai: vente.delai || '30',
+                numero: venteData.numero || venteData.num || 'N/A',
+                date: venteData.date || new Date().toISOString().split('T')[0],
+                client: venteData.tiers || venteData.client || 'Client',
+                adresse: venteData.adresse || '',
+                delai: venteData.delai || '30',
                 articles: articles,
-                total: vente.total || 0
+                total: venteData.total || 0
             };
             
-            console.log('InvoiceData préparé:', invoiceData);
+            console.log('✅ InvoiceData créé:', invoiceData);
             
-            // Ouvrir le modal de sélection de format
-            openFormatModal('facture', invoiceData);
+            //  Ouvrir modal sélection format
+            openFormatModal(type, invoiceData);
         }
 
 
@@ -8359,15 +8359,17 @@
                 ${sectionPaiement}
                 
                 ${h.type === 'vente' ? `
-                    <div style="display: flex; gap: 8px; margin-top: 16px;">
-                    <button class="btn btn-pdf" onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')" style="flex: 1;">
-                        <i class="fa-solid fa-file-invoice"></i> Facture
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;">
+                    <button class="btn btn-pdf" 
+                            onclick="genererPDFDepuisHistorique(historique[${idx}], 'facture')">
+                        📄 Facture
                     </button>
-                    <button class="btn btn-info" onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')" style="flex: 1;">
-                        <i class="fa-solid fa-truck"></i> Bon livraison
+                    <button class="btn btn-info" 
+                            onclick="genererPDFDepuisHistorique(historique[${idx}], 'bon')">
+                        🚚 Bon livraison
                     </button>
-                    </div>
-                ` : ''}
+                </div>
+            ` : ''}
                 </div>
             `;
             
