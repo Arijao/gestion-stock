@@ -3666,6 +3666,9 @@
         let factureAchatDraft = null; // {name, mime, dataUrl, dateUpload}
         let demandesPrix = []; 
         let articlesDP = [];
+        let historiqueVentes = [];
+        let venteListe = [];
+        
         // PAGINATION
         let stockPage = 1;
         let stockPerPage = 10;
@@ -5390,19 +5393,21 @@
             // Récupérer les infos entreprise depuis les champs de configuration
             const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
             const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
-            const telEntreprise = document.getElementById('config-tel')?.value || '';
-            const emailEntreprise = document.getElementById('config-email')?.value || '';
+            const telEntreprise = ''; // Pas de champ tel dans ta config
+            const emailEntreprise = ''; // Pas de champ email dans ta config
             const nifEntreprise = document.getElementById('config-nif')?.value || '';
             const statEntreprise = document.getElementById('config-stat')?.value || '';
+            const activiteEntreprise = document.getElementById('config-activite')?.value || '';
+            const rcEntreprise = document.getElementById('config-rc')?.value || '';
+            const responsableEntreprise = document.getElementById('config-responsable')?.value || '';
+            const banqueEntreprise = document.getElementById('config-banque')?.value || '';
+            const paiementEntreprise = document.getElementById('config-paiement')?.value || '';
             
             // Récupérer le logo si existe
             let appLogoData = null;
-            const logoMarkElement = document.getElementById('app-logo-mark');
-            if (logoMarkElement) {
-                const logoImg = logoMarkElement.querySelector('img');
-                if (logoImg) {
-                    appLogoData = logoImg.src;
-                }
+            const logoPreview = document.getElementById('logo-preview');
+            if (logoPreview && logoPreview.src && !logoPreview.src.includes('data:,')) {
+                appLogoData = logoPreview.src;
             }
             // Déterminer le titre selon le type
             let titre = 'FACTURE';
@@ -5429,11 +5434,12 @@
                                 
                                 <div style="font-size: 10px; line-height: 1.8; color: #334155;">
                                     <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Entreprise :</strong> ${nomEntreprise}</p>
+                                    ${activiteEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Activité :</strong> ${activiteEntreprise}</p>` : ''}
                                     <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Adresse :</strong> ${adresseEntreprise}</p>
-                                    <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Téléphone :</strong> ${telEntreprise}</p>
-                                    <p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Email :</strong> ${emailEntreprise}</p>
                                     ${nifEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">NIF :</strong> ${nifEntreprise}</p>` : ''}
                                     ${statEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">STAT :</strong> ${statEntreprise}</p>` : ''}
+                                    ${rcEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">RC :</strong> ${rcEntreprise}</p>` : ''}
+                                    ${responsableEntreprise ? `<p style="margin: 3px 0;"><strong style="font-weight: 600; color: #1e293b; min-width: 100px; display: inline-block;">Responsable :</strong> ${responsableEntreprise}</p>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -5501,14 +5507,16 @@
                             </tr>
                         </tfoot>
                     </table>
-                    
+
                     <!-- Pied de page -->
                     <div style="margin-top: 35px; font-size: 12px; line-height: 1.8; color: #334155;">
                         ${type !== 'bon' ? `
                         <p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Délai de paiement :</strong> ${data.delai} jours</p>
-                        <p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Mode de paiement :</strong> Virement bancaire / Chèque / Espèces</p>
+                        ${paiementEntreprise ? `<p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Mode de paiement :</strong> ${paiementEntreprise}</p>` : ''}
+                        ${banqueEntreprise ? `<p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Coordonnées bancaires :</strong> ${banqueEntreprise}</p>` : ''}
                         ` : ''}
                         <p style="margin: 12px 0;"><strong style="color: #1e293b; font-weight: 600;">Merci de votre confiance !</strong></p>
+                        ${responsableEntreprise ? `<p style="margin: 12px 0; font-size: 11px; color: #6b7280;">Responsable : ${responsableEntreprise}</p>` : ''}
                     </div>
                     
                     <div style="margin-top: 60px; text-align: right; font-weight: 700; color: #1e293b; font-size: 13px;">
@@ -5547,19 +5555,21 @@
             // Récupérer les infos entreprise depuis les champs de configuration
             const nomEntreprise = document.getElementById('config-nom')?.value || 'Mon Entreprise';
             const adresseEntreprise = document.getElementById('config-adresse')?.value || '';
-            const telEntreprise = document.getElementById('config-tel')?.value || '';
-            const emailEntreprise = document.getElementById('config-email')?.value || '';
+            const telEntreprise = ''; // Pas de champ tel dans ta config
+            const emailEntreprise = ''; // Pas de champ email dans ta config
             const nifEntreprise = document.getElementById('config-nif')?.value || '';
             const statEntreprise = document.getElementById('config-stat')?.value || '';
+            const activiteEntreprise = document.getElementById('config-activite')?.value || '';
+            const rcEntreprise = document.getElementById('config-rc')?.value || '';
+            const responsableEntreprise = document.getElementById('config-responsable')?.value || '';
+            const banqueEntreprise = document.getElementById('config-banque')?.value || '';
+            const paiementEntreprise = document.getElementById('config-paiement')?.value || '';
             
             // Récupérer le logo si existe
             let appLogoData = null;
-            const logoMarkElement = document.getElementById('app-logo-mark');
-            if (logoMarkElement) {
-                const logoImg = logoMarkElement.querySelector('img');
-                if (logoImg) {
-                    appLogoData = logoImg.src;
-                }
+            const logoPreview = document.getElementById('logo-preview');
+            if (logoPreview && logoPreview.src && !logoPreview.src.includes('data:,')) {
+                appLogoData = logoPreview.src;
             }
             // Déterminer le titre selon le type
             let titre = 'FACTURE';
@@ -5582,10 +5592,10 @@
                         
                         <div style="font-size: 9px; margin-top: 5px;">
                             ${adresseEntreprise}<br>
-                            Tel: ${telEntreprise}<br>
-                            ${emailEntreprise}
-                            ${nifEntreprise ? `<br>NIF: ${nifEntreprise}` : ''}
-                            ${statEntreprise ? `<br>STAT: ${statEntreprise}` : ''}
+                            ${activiteEntreprise ? `Activité: ${activiteEntreprise}<br>` : ''}
+                            ${nifEntreprise ? `NIF: ${nifEntreprise}<br>` : ''}
+                            ${statEntreprise ? `STAT: ${statEntreprise}<br>` : ''}
+                            ${rcEntreprise ? `RC: ${rcEntreprise}` : ''}
                         </div>
                     </div>
                     
@@ -6955,33 +6965,26 @@
             }
         }
 
-        function genererPDFDepuisHistorique(h, typeDoc){
-            if(h.type !== 'vente'){
+        function genererPDFDepuisHistorique(index) {
+            const vente = historiqueVentes[index];
+            if (!vente || !vente.articles || vente.articles.length === 0) {
+                alert('Données de vente invalides');
                 return;
             }
-
-            // Backup état actuel
-            const backupArticles = articlesVente.slice();
-            const clientBackup   = document.getElementById('vente-client').value;
-            const adrBackup      = document.getElementById('vente-adresse').value;
-            const numBackup      = document.getElementById('vente-numero').value;
-
-            // Ampidiro ao amin’ny “formulaire vente” vetivety ny données historique
-            articlesVente = h.articles.slice();
-            document.getElementById('vente-client').value  = h.tiers || '';
-            document.getElementById('vente-adresse').value = h.adresse || '';
-            if(h.numero){
-                document.getElementById('vente-numero').value = h.numero;
-            }
-
-            // Génération PDF (typeDoc = 'facture' | 'proforma' | 'bon')
-            genererPDFVente(typeDoc);
-
-            // Averina amin’ny état taloha
-            articlesVente = backupArticles;
-            document.getElementById('vente-client').value  = clientBackup;
-            document.getElementById('vente-adresse').value = adrBackup;
-            document.getElementById('vente-numero').value  = numBackup;
+            
+            // Préparer les données au bon format
+            const invoiceData = {
+                numero: vente.numero || `V${String(index + 1).padStart(4, '0')}`,
+                date: vente.date,
+                client: vente.client,
+                adresse: vente.adresse || '',
+                delai: vente.delai || '30',
+                articles: vente.articles,
+                total: vente.total
+            };
+            
+            // Ouvrir le modal de sélection de format
+            openFormatModal('facture', invoiceData);
         }
 
 
@@ -7002,7 +7005,7 @@
 
         function genererPDFVente(type) {
             // Vérifier qu'il y a des articles
-            if (venteListe.length === 0) {
+            if (!venteListe || venteListe.length === 0) {
                 alert('Aucun article dans la vente');
                 return;
             }
