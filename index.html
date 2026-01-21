@@ -2411,78 +2411,6 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
-        /* Format Selector Modal */
-        .format-selector-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .format-selector-modal.active {
-            display: flex;
-        }
-
-        .format-selector-dialog {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-
-        .format-selector-dialog h3 {
-            margin-top: 0;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .format-selector-dialog p {
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-
-        .format-buttons-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .format-btn {
-            padding: 12px 25px;
-            border: 2px solid #ddd;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            min-width: 150px;
-        }
-
-        .format-btn:hover {
-            border-color: #4CAF50;
-            background: #f0f8f0;
-        }
-
-        .format-btn small {
-            display: block;
-            font-weight: normal;
-            font-size: 12px;
-            margin-top: 5px;
-            opacity: 0.8;
-        }
     </style>
 </head>
 <body>
@@ -3136,7 +3064,8 @@
                             </div>
                         </div>
                         
-                        <!--  BOUTON EN BAS À DROITE -->
+                        <!-- ✅ BOUTON EN BAS À DROITE -->
+                        <!-- BOUTON VISIBLE MAIS DOUX -->
                         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
                             <button onclick="ajouterArticleVente()" 
                                     style="background: #f3f4f6; 
@@ -6461,9 +6390,7 @@
             }
         }
 
-
-
-
+        
         function genererPDFDepuisHistorique(h, typeDoc){
             if(h.type !== 'vente'){
                 return;
@@ -6497,7 +6424,7 @@
 
         function regenererPDF(idx, type) {
             const h = historique[idx];
-            genererPDF({
+            const data = {
                 type: type,
                 operation: h.type,
                 date: h.date,
@@ -6506,37 +6433,271 @@
                 adresse: h.adresse || '',
                 articles: h.articles,
                 total: h.total
-            });
+            };
+            showFormatSelector(type.toUpperCase(), data);
         }
+
 
         function genererPDFVente(type) {
             if(!articlesVente.length) {
-                alert("Aucun article");
+                alert('Aucun article');
+                return;
+            }
+            const data = {
+                type: type,
+                operation: 'vente',
+                date: document.getElementById('vente-date').value,
+                numero: document.getElementById('vente-numero').value,
+                tiers: document.getElementById('vente-client').value,
+                adresse: document.getElementById('vente-adresse').value,
+                articles: articlesVente,
+                total: articlesVente.reduce((s, a) => s + a.total, 0)
+            };
+            showFormatSelector(type.toUpperCase(), data);
+        }
+
+        function showFormatSelector(documentType, documentData) {
+            const modal = document.createElement('div');
+            modal.id = 'format-selector-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <h3>Choisir le format d'export</h3>
+                    <p style="color: #666; margin: 20px 0;">Sélectionnez le format pour votre ${documentType} :</p>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: center; margin: 20px 0; flex-wrap: wrap;">
+                        <button id="btn-format-a4" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                            📄 Format A4
+                        </button>
+                        <button id="btn-format-thermal" style="padding: 12px 24px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                            🖨️ Thermique 80mm
+                        </button>
+                    </div>
+                    
+                    <button id="btn-cancel-format" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        ✕ Annuler
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            document.getElementById('btn-format-a4').onclick = () => {
+                document.body.removeChild(modal);
+                genererPDF(documentData, 'a4');
+            };
+            
+            document.getElementById('btn-format-thermal').onclick = () => {
+                document.body.removeChild(modal);
+                genererPDF(documentData, 'thermal');
+            };
+            
+            document.getElementById('btn-cancel-format').onclick = () => {
+                document.body.removeChild(modal);
+            };
+        }
+        
+        function genererPDFThermal(data) {
+            const { jsPDF } = window.jspdf;
+            
+            const isBonLivraison = data.type === 'bon';
+            let titreDoc = data.type === 'proforma' ? 'PROFORMA' : 
+                        data.type === 'facture' ? 'FACTURE' : 'BON DE LIVRAISON';
+            
+            const dateObj = new Date(data.date + 'T00:00:00');
+            const dateFormatted = dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            // Calcul du total
+            let total = 0;
+            data.articles.forEach(article => {
+                total += article.quantite * article.prix;
+            });
+            
+            // Récupérer les infos depuis la configuration
+            const nomEntreprise = document.getElementById('config-nom')?.value || config.nom || '';
+            const adresseEntreprise = document.getElementById('config-adresse')?.value || config.adresse || '';
+            const modePaiement = document.getElementById('config-paiement')?.value || config.paiement || '';
+            
+            // Créer PDF thermique 80mm (largeur fixe, hauteur automatique)
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [80, 297] // 80mm de large, hauteur A4 temporaire (sera ajustée)
+            });
+            
+            let y = 5; // Position verticale de départ
+            const centerX = 40; // Centre horizontal (80mm / 2)
+            const leftMargin = 3;
+            const rightMargin = 77;
+            const contentWidth = 74; // Largeur utilisable (80 - marges)
+            
+            // En-tête : Nom de l'entreprise (centré, gras)
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            const nomLines = pdf.splitTextToSize(nomEntreprise, contentWidth);
+            nomLines.forEach(line => {
+                pdf.text(line, centerX, y, { align: 'center' });
+                y += 5;
+            });
+            
+            // Adresse (centrée, normale)
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            const adresseLines = pdf.splitTextToSize(adresseEntreprise, contentWidth);
+            adresseLines.forEach(line => {
+                pdf.text(line, centerX, y, { align: 'center' });
+                y += 4;
+            });
+            
+            y += 3;
+            
+            // Ligne de séparation
+            pdf.setLineWidth(0.3);
+            pdf.line(leftMargin, y, rightMargin, y);
+            y += 5;
+            
+            // Titre du document (centré, gras)
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(titreDoc, centerX, y, { align: 'center' });
+            y += 5;
+            
+            // Numéro et date
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`N° ${data.numero}`, centerX, y, { align: 'center' });
+            y += 4;
+            pdf.text(`Date: ${dateFormatted}`, centerX, y, { align: 'center' });
+            y += 5;
+            
+            // Client
+            if (data.tiers) {
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Client:', leftMargin, y);
+                y += 4;
+                pdf.setFont('helvetica', 'normal');
+                const clientLines = pdf.splitTextToSize(data.tiers, contentWidth);
+                clientLines.forEach(line => {
+                    pdf.text(line, leftMargin, y);
+                    y += 4;
+                });
+            }
+            
+            y += 2;
+            
+            // Ligne de séparation
+            pdf.line(leftMargin, y, rightMargin, y);
+            y += 5;
+            
+            // Articles
+            pdf.setFontSize(7);
+            
+            data.articles.forEach(article => {
+                // Nom du produit
+                pdf.setFont('helvetica', 'bold');
+                const produitLines = pdf.splitTextToSize(article.produit, contentWidth);
+                produitLines.forEach(line => {
+                    pdf.text(line, leftMargin, y);
+                    y += 3.5;
+                });
+                
+                // Détails : Qté x Prix U = Montant
+                pdf.setFont('helvetica', 'normal');
+                
+                if (isBonLivraison) {
+                    // Bon de livraison : seulement quantité et unité
+                    pdf.text(`${article.quantite} ${article.unite}`, leftMargin + 2, y);
+                } else {
+                    // Facture/Proforma : quantité, prix, montant
+                    const montant = article.quantite * article.prix;
+                    const detailText = `${article.quantite} ${article.unite} x ${article.prix.toLocaleString()} Ar`;
+                    const montantText = `${montant.toLocaleString()} Ar`;
+                    
+                    pdf.text(detailText, leftMargin + 2, y);
+                    pdf.text(montantText, rightMargin, y, { align: 'right' });
+                }
+                
+                y += 4;
+            });
+            
+            y += 2;
+            
+            // Ligne de séparation avant total
+            if (!isBonLivraison) {
+                pdf.line(leftMargin, y, rightMargin, y);
+                y += 5;
+                
+                // TOTAL (gras, plus grand)
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('TOTAL:', leftMargin, y);
+                pdf.text(`${total.toLocaleString()} Ar`, rightMargin, y, { align: 'right' });
+                y += 6;
+            }
+            
+            // Ligne de séparation
+            pdf.setLineWidth(0.3);
+            pdf.line(leftMargin, y, rightMargin, y);
+            y += 5;
+            
+            // Mode de paiement
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Mode de paiement:', leftMargin, y);
+            y += 4;
+            pdf.setFont('helvetica', 'bold');
+            const paiementLines = pdf.splitTextToSize(modePaiement, contentWidth);
+            paiementLines.forEach(line => {
+                pdf.text(line, centerX, y, { align: 'center' });
+                y += 3.5;
+            });
+            
+            y += 5;
+            
+            // Message de remerciement (centré)
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'italic');
+            pdf.text('Merci pour votre confiance !', centerX, y, { align: 'center' });
+            y += 4;
+            pdf.text('À bientôt', centerX, y, { align: 'center' });
+            
+            y += 5;
+            
+            // Ajuster la hauteur du PDF au contenu réel
+            const finalHeight = y + 5; // Ajouter une petite marge en bas
+            const finalPdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [80, finalHeight]
+            });
+            
+            // Recopier le contenu dans le PDF final avec la bonne hauteur
+            const pageData = pdf.output('datauristring');
+            
+            // Sauvegarder le PDF
+            pdf.save(titreDoc.replace(/ /g, '_') + '_' + data.numero + '_80mm.pdf');
+        }
+
+        function genererPDF(data, format = 'a4') {
+            // Si format thermique, rediriger vers la fonction spécifique
+            if (format === 'thermal') {
+                genererPDFThermal(data);
                 return;
             }
             
-            // Préparer les données
-            const data = {
-                type: type,
-                operation: "vente",
-                date: document.getElementById("vente-date").value,
-                numero: document.getElementById("vente-numero").value,
-                tiers: document.getElementById("vente-client").value,
-                adresse: document.getElementById("vente-adresse").value,
-                articles: articlesVente,
-                total: articlesVente.reduce((s,a)=>s+a.total, 0)
-            };
-            
-            // Remplir le container pour que genererPDFFormatThermal() puisse lire les données
-            document.getElementById("pdf-preview-container").setAttribute('data-numero', data.numero);
-            document.getElementById("pdf-preview-container").setAttribute('data-tiers', data.tiers);
-            
-            // Afficher le modal de sélection de format
-            afficherModalChoixFormat(data);
-        }
-
-        
-        function genererPDF(data) {
+            // Sinon, continuer avec le format A4 existant (code inchangé)
             const { jsPDF } = window.jspdf;
             
             const isBonLivraison = data.type === 'bon';
@@ -6610,13 +6771,20 @@
                                                             <div style="margin-top: 8px; font-weight: 800; color: #111827; font-size: 14px;">${config.responsable || ''}</div>
                                                         </div>
 
+    
 
             `;
             
-            // Exporter en PDF - Afficher sélecteur de format
-            document.getElementById("pdf-preview-container").setAttribute('data-numero', data.numero);
-            document.getElementById("pdf-preview-container").setAttribute('data-tiers', data.tiers || '');
-            afficherSelecteurFormat(data);
+            // Exporter en PDF
+            const element = document.getElementById("pdf-preview-container");
+            html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }).then(canvas => {
+                const imgData = canvas.toDataURL("image/png");
+                const pdf = new jsPDF("p", "mm", "a4");
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+                pdf.save(titreDoc.replace(/ /g, '_') + '_' + data.numero + '.pdf');
+            });
         }
 
         function numberToWords(num) {
@@ -8472,355 +8640,6 @@
             console.log('⚠️ Mode hors ligne');
             // Optional: afficher notification
         });
-
-        // ========== AFFICHER SÉLECTEUR FORMAT ==========
-        function afficherSelecteurFormat(data) {
-            let modal = document.getElementById('format-selector-modal');
-
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'format-selector-modal';
-                modal.className = 'format-selector-modal';
-                modal.innerHTML = `
-                    <div class="format-selector-dialog">
-                        <h3>📄 Sélectionnez le format d'export</h3>
-                        <p>Choisissez le format adapté à votre imprimante</p>
-                        <div class="format-buttons-group">
-                            <button class="format-btn" onclick="exporterPDFFormat('a4', event)">
-                                A4 Standard
-                                <small>210×297mm</small>
-                            </button>
-                            <button class="format-btn" onclick="exporterPDFFormat('thermal', event)">
-                                🖨️ Thermique
-                                <small>80mm</small>
-                            </button>
-                        </div>
-                        <button onclick="fermerSelecteurFormat()" style="margin-top: 15px; padding: 8px 15px; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer;">Annuler</button>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-
-            modal.classList.add('active');
-        }
-
-        // ========== FERMER SÉLECTEUR FORMAT ==========
-        function fermerSelecteurFormat() {
-            const modal = document.getElementById('format-selector-modal');
-            if (modal) {
-                modal.classList.remove('active');
-            }
-        }
-
-        // ========== EXPORTER PDF AVEC FORMAT ==========
-        function exporterPDFFormat(format, event) {
-            fermerSelecteurFormat();
-
-            const { jsPDF } = window.jspdf;
-            const element = document.getElementById("pdf-preview-container");
-
-            if (format === 'a4') {
-                // Export A4 standard (existant)
-                html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }).then(canvas => {
-                    const imgData = canvas.toDataURL("image/png");
-                    const pdf = new jsPDF("p", "mm", "a4");
-                    const imgWidth = 190;
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
-
-                    // Récupérer le titre et numéro du document
-                    let titreDoc = document.querySelector('#pdf-preview-container h2')?.textContent || 'DOCUMENT';
-                    let numero = document.querySelector('#pdf-preview-container')?.getAttribute('data-numero') || '';
-
-                    pdf.save(titreDoc.replace(/ /g, '_') + '_' + numero + '.pdf');
-                });
-            } else if (format === 'thermal') {
-                // Export format thermique 80mm
-                genererPDFFormatThermal();
-            }
-        }
-
-        // ===== FONCTION: Afficher modal de confirmation =====
-        function afficherModalConfirmationThermal() {
-            const confirmation = confirm(`⚠️ Exporter en format THERMIQUE 80mm?\n\nLe contenu sera optimisé pour imprimante thermique.`);
-            if (confirmation) {
-                genererPDFFormatThermal();
-            }
-        }
-
-        // ===== FONCTION: Afficher modal avec 2 formats =====
-        function afficherModalChoixFormat(data) {
-            let modal = document.getElementById('format-selector-modal-thermal');
-            
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'format-selector-modal-thermal';
-                modal.style.cssText = `
-                    display: none;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.6);
-                    z-index: 10000;
-                    justify-content: center;
-                    align-items: center;
-                `;
-                
-                modal.innerHTML = `
-                    <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: 500px; width: 90%;">
-                        <h3 style="margin-top: 0; color: #333; margin-bottom: 20px;">📄 Choisir le format d'export</h3>
-                        <p style="color: #666; margin-bottom: 20px;">Sélectionnez le format adapté à votre imprimante</p>
-                        
-                        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-                            <button onclick="fermerModalFormat(); genererPDFA4();" 
-                                style="flex: 1; padding: 15px; border: 2px solid #4CAF50; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
-                                📋 Format A4<br><small style="font-weight: normal; font-size: 12px;">Complet</small>
-                            </button>
-                            <button onclick="fermerModalFormat(); genererPDFFormatThermal();" 
-                                style="flex: 1; padding: 15px; border: 2px solid #2196F3; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
-                                🖨️ Format 80mm<br><small style="font-weight: normal; font-size: 12px;">Thermique</small>
-                            </button>
-                        </div>
-                        
-                        <button onclick="fermerModalFormat();" 
-                            style="width: 100%; padding: 10px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
-                            ✗ Annuler
-                        </button>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-            // Stocker les données pour l'export
-            window.pdfDataEnCours = arguments[0]; // Récupère le paramètre data
-            modal.style.display = 'flex';
-            modal.onclick = function(event) {
-                if (event.target === modal) {
-                    fermerModalFormat();
-                }
-            };
-        }
-
-        // ===== FONCTION: Fermer modal =====
-        function fermerModalFormat() {
-            const modal = document.getElementById('format-selector-modal-thermal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-            // Nettoyer les données stockées
-            window.pdfDataEnCours = null;
-        }
-        // ===== FONCTION: Export A4 (utilise genererPDF existante) =====
-        function genererPDFA4() {
-            // Récupérer les données stockées
-            const data = window.pdfDataEnCours;
-            
-            if (!data) {
-                alert('Erreur: Aucune donnée à exporter');
-                return;
-            }
-            
-            // Appeler la fonction genererPDF existante (votre code original)
-            genererPDF(data);
-        }
-
-
-        // ========== GÉNÉRER PDF THERMIQUE 80MM ==========
-        function genererPDFFormatThermal() {
-            const { jsPDF } = window.jspdf;
-            
-            // ÉTAPE 1: Récupérer configuration depuis les champs
-            const config = obtenirConfigurationEntreprise();
-            
-            // ÉTAPE 2: Récupérer les données du document
-            let titreDoc = document.querySelector('#pdf-preview-container h2')?.textContent || 'FACTURE';
-            let numero = document.querySelector('#pdf-preview-container')?.getAttribute('data-numero') || '';
-            let tiers = document.querySelector('#pdf-preview-container [data-tiers]')?.getAttribute('data-tiers') || 'Client';
-            
-            // ÉTAPE 3: Récupérer les articles du tableau
-            const lignesArticles = document.querySelectorAll('#pdf-preview-container tbody tr');
-            let articles = [];
-            let totalGeneral = 0;
-
-            lignesArticles.forEach(ligne => {
-                const cells = ligne.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    const nom = cells[0]?.textContent?.trim() || '';
-                    const qte = parseFloat(cells[1]?.textContent?.trim()) || 0;
-                    
-                    // Extraction du prix
-                    let prixText = cells[2]?.textContent?.trim() || '0';
-                    let prix = parseFloat(prixText.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
-                    
-                    // Extraction du montant
-                    let montantText = cells[3]?.textContent?.trim() || '0';
-                    let montant = parseFloat(montantText.replace(/[^0-9.,-]/g, '').replace('.', '').replace(',', '.')) || 0;
-
-                    if (nom && montant > 0) {
-                        articles.push({ 
-                            nom: nom.substring(0, 30), // Limiter à 30 caractères pour largeur
-                            qte: qte.toFixed(2),
-                            prix: prix.toFixed(0),
-                            montant: montant 
-                        });
-                        totalGeneral += montant;
-                    }
-                }
-            });
-
-            // ÉTAPE 4: Créer le conteneur thermique OPTIMISÉ EN LARGEUR
-            const thermalContainer = document.createElement('div');
-            thermalContainer.style.cssText = `
-                width: 74mm;
-                padding: 2mm;
-                background: white;
-                color: black;
-                font-family: 'Courier New', monospace;
-                font-size: 9px;
-                line-height: 1.35;
-                margin: 0;
-                box-sizing: border-box;
-                overflow: hidden;
-                text-align: center;
-            `;
-
-            // ÉTAPE 5: Construire le HTML thermique OPTIMISÉ
-            let html = `
-                <div style="width: 100%; word-wrap: break-word; text-align: center;">
-                    
-                    <!-- EN-TÊTE (DEPUIS CONFIG) -->
-                    <div style="border-bottom: 1px solid #000; padding: 2px 0; margin-bottom: 3px; font-size: 8px;">
-                        <div style="font-weight: bold; font-size: 9px; margin-bottom: 1px;">
-                            ${config.nom}
-                        </div>
-                        ${config.adresse ? `<div style="font-size: 7px; word-break: break-word;">${config.adresse}</div>` : ''}
-                        ${config.telephone ? `<div style="font-size: 7px;">Tel: ${config.telephone}</div>` : ''}
-                    </div>
-                    
-                    <!-- INFO DOCUMENT -->
-                    <div style="font-size: 8px; margin-bottom: 3px; margin-top: 2px;">
-                        <strong>${titreDoc}</strong><br>
-                        N°: ${numero}<br>
-                        <span style="font-size: 7px;">${new Date().toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    
-                    <!-- SÉPARATION -->
-                    <div style="border-bottom: 1px dashed #000; margin: 2px 0;"></div>
-                    
-                    <!-- CLIENT -->
-                    <div style="font-size: 8px; text-align: left; margin: 2px 2px; padding-bottom: 2px;">
-                        <strong>Client:</strong> ${tiers}
-                    </div>
-                    
-                    <!-- SÉPARATION -->
-                    <div style="border-bottom: 1px dashed #000; margin: 2px 0;"></div>
-                    
-                    <!-- ARTICLES OPTIMISÉS (LARGEUR CONTRÔLÉE) -->
-                    <div style="font-size: 7px; text-align: left; margin: 2px 2px; padding-bottom: 2px;">
-            `;
-            
-            articles.forEach(article => {
-                // Formater l'article sur plusieurs lignes pour éviter le débordement
-                html += `
-                        <div style="margin-bottom: 2px;">
-                            <div style="word-wrap: break-word; font-weight: bold; margin-bottom: 1px;">
-                                ${article.nom}
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 6px; padding-right: 2px;">
-                                <span>${article.qte}× ${article.prix}Ar</span>
-                                <span>${Math.round(article.montant).toLocaleString('fr-FR')}Ar</span>
-                            </div>
-                        </div>
-                `;
-            });
-            
-            html += `
-                    </div>
-                    
-                    <!-- SÉPARATION -->
-                    <div style="border-bottom: 1px solid #000; margin: 2px 0;"></div>
-                    
-                    <!-- TOTAL (VISIBLE ET COMPLET) -->
-                    <div style="font-size: 9px; font-weight: bold; text-align: right; margin: 3px 2px; padding-top: 2px;">
-                        Total: ${Math.round(totalGeneral).toLocaleString('fr-FR')}Ar
-                    </div>
-                    
-                    <!-- MODE PAIEMENT (DEPUIS CONFIG) -->
-                    <div style="font-size: 7px; text-align: center; margin: 2px 0; padding: 2px;">
-                        <strong>Paiement:</strong> ${config.paiement}
-                    </div>
-                    
-                    <!-- BANQUE SI EXISTANTE (DEPUIS CONFIG) -->
-                    ${config.banque ? `
-                        <div style="font-size: 7px; text-align: center; margin: 1px 0;">
-                            Banque: ${config.banque}
-                        </div>
-                    ` : ''}
-                    
-                    <!-- MESSAGE REMERCIEMENT -->
-                    <div style="font-size: 8px; text-align: center; font-weight: bold; margin: 4px 0; padding: 3px; background: #f5f5f5; border-radius: 2px;">
-                        🙏 Merci!
-                    </div>
-                    
-                    <!-- PIED DE PAGE -->
-                    <div style="font-size: 6px; text-align: center; color: #666; margin-top: 3px; border-top: 1px dotted #999; padding-top: 2px;">
-                        ${new Date().toLocaleTimeString('fr-FR')}
-                    </div>
-                    
-                </div>
-            `;
-
-            thermalContainer.innerHTML = html;
-            thermalContainer.style.position = 'absolute';
-            thermalContainer.style.left = '-9999px';
-            document.body.appendChild(thermalContainer);
-
-            // ÉTAPE 6: Convertir en PDF avec dimensions DYNAMIQUES
-            html2canvas(thermalContainer, { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false, 
-                backgroundColor: '#ffffff',
-                width: 210 // 74mm en pixels (plus précis)
-            }).then(canvas => {
-                const imgData = canvas.toDataURL("image/png");
-                
-                // ÉTAPE 7: Calculer hauteur proportionnellement
-                const pdfWidthMM = 80;
-                const pdfHeightMM = (canvas.height * pdfWidthMM) / canvas.width; // Hauteur adaptée!
-                
-                // ÉTAPE 8: Créer PDF avec dimensions calculées
-                const pdf = new jsPDF("p", "mm", [pdfWidthMM, pdfHeightMM + 3]); // +3mm sécurité
-                pdf.addImage(imgData, "PNG", 0, 0, pdfWidthMM, pdfHeightMM);
-                
-                // ÉTAPE 9: Sauvegarder avec timestamp
-                const nomFichier = `${titreDoc.replace(/ /g, '_')}_${numero}_80mm_${new Date().getTime()}.pdf`;
-                pdf.save(nomFichier);
-                
-                // Nettoyer
-                document.body.removeChild(thermalContainer);
-                console.log('PDF thermique 80mm généré:', nomFichier);
-            }).catch(err => {
-                console.error('❌ Erreur export thermique:', err);
-                if (document.body.contains(thermalContainer)) {
-                    document.body.removeChild(thermalContainer);
-                }
-                alert('Erreur lors de la génération du PDF thermique');
-            });
-        }
-
-        // ===== NOUVELLE FONCTION: Récupérer configuration dynamique =====
-        function obtenirConfigurationEntreprise() {
-            return {
-                nom: document.getElementById('config-nom')?.value?.trim() || 'ENTREPRISE',
-                adresse: document.getElementById('config-adresse')?.value?.trim() || '',
-                telephone: document.getElementById('config-telephone')?.value?.trim() || '',
-                paiement: document.getElementById('config-paiement')?.value?.trim() || 'Non spécifié',
-                banque: document.getElementById('config-banque')?.value?.trim() || ''
-            };
-        }
-
 
     </script>
 </body>
