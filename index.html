@@ -1034,6 +1034,23 @@
         }
         }
 
+        /* DIAGNOSTIC TEMPORAIRE - À retirer après test */
+        #achat-modal .modal-body *,
+        #vente-modal .modal-body * {
+        outline: 1px solid red !important;
+        }
+
+        #achat-modal .modal-table-wrapper,
+        #vente-modal .modal-table-wrapper {
+        outline: 3px solid blue !important;
+        }
+
+        #achat-modal .modal-body > *,
+        #vente-modal .modal-body > * {
+        max-width: 100%;
+        box-sizing: border-box;
+        }
+
         /* ========== FIX SCROLL HORIZONTAL TABLEAUX MODALS ========== */
         .modal-table-wrapper {
             width: 100%;
