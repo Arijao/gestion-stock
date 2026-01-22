@@ -4709,6 +4709,14 @@
         function appliquerModification(ancienNom, ancienNomOriginal, event) {
             if(event) event.preventDefault();
             
+            // ===== DEBUG START =====
+            console.log('🔍 DEBUG - Modification demandée:');
+            console.log('  ancienNom (param):', ancienNom);
+            console.log('  ancienNomOriginal (param):', ancienNomOriginal);
+            console.log('  ancienNomNorm calculé:', normaliserNomProduit(ancienNomOriginal));
+            console.log('📦 Clés actuelles dans stock:', Object.keys(stock));
+            console.log('🔎 Existe dans stock?', stock[normaliserNomProduit(ancienNomOriginal)]);
+            // ===== DEBUG END =====
             const nouveauNom = document.getElementById('modal-modif-nom').value.trim();
             const nouvelleUnite = document.getElementById('modal-modif-unite').value.trim();
             
