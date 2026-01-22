@@ -4721,17 +4721,28 @@
             const ancienNomNorm = normaliserNomProduit(ancienNomOriginal);
             const nouveauNomNorm = normaliserNomProduit(nouveauNom);
             
+            // CORRECTION : Vérifier que le produit existe dans le stock
+            if(!stock[ancienNomNorm]) {
+                alert(' Erreur : Ce produit n\'existe plus dans le stock');
+                console.error('Produit introuvable:', ancienNomOriginal, '→', ancienNomNorm);
+                fermerModalModification();
+                return;
+            }
+            
             // Vérifier si le nouveau nom existe déjà (et c'est un produit différent)
             if(nouveauNomNorm !== ancienNomNorm && stock[nouveauNomNorm]) {
                 alert('Un produit avec ce nom existe déjà');
                 return;
             }
             
+            // CORRECTION : Récupérer l'unité actuelle de manière sécurisée
+            const uniteActuelle = stock[ancienNomNorm].unite || 'Pièce';
+            
             // Journaliser la modification
             const modification = {
                 date: new Date().toISOString(),
                 utilisateur: config.responsable || 'Admin',
-                ancien: { nom: ancienNomOriginal, unite: stock[ancienNomNorm].unite },
+                ancien: { nom: ancienNomOriginal, unite: uniteActuelle },  // Utilise la variable sécurisée
                 nouveau: { nom: nouveauNom, unite: nouvelleUnite }
             };
             
@@ -4745,7 +4756,7 @@
                 historique.forEach(h => {
                     if(h.articles) {
                         h.articles.forEach(a => {
-                            if(a.produit === ancienNomOriginal) {
+                            if(a && a.produit === ancienNomOriginal) {  // Vérification ajoutée
                                 a.produit = nouveauNom;
                             }
                         });
