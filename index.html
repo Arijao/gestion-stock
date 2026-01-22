@@ -4104,24 +4104,24 @@
 
         function getLots(p){
             return (stock[p] && Array.isArray(stock[p].lots)) ? stock[p].lots : [];
-            }
+        }
 
-            function getStockQty(p){
+        function getStockQty(p){
             return getLots(p).reduce((s,l)=> s + (Number(l.qte)||0), 0);
-            }
+        }
 
-            function getStockValue(p){
+        function getStockValue(p){
             return getLots(p).reduce((s,l)=> s + (Number(l.qte)||0) * (Number(l.prix)||0), 0);
-            }
+        }
 
-            function getAvgBuyPrice(p){
+        function getAvgBuyPrice(p){
             const q = getStockQty(p);
             if(q <= 0) return 0;
             return getStockValue(p) / q;
-            }
+        }
 
-            // Consomme FIFO sur une copie (ou sur le vrai lots) et retourne le coût exact
-            function consumeLotsFIFO(lots, qteDemandee){
+        // Consomme FIFO sur une copie (ou sur le vrai lots) et retourne le coût exact
+        function consumeLotsFIFO(lots, qteDemandee){
             let q = Number(qteDemandee || 0);
             let cogs = 0;
 
@@ -4137,46 +4137,64 @@
             }
 
             return { ok: q === 0, cogs };
-            }
+        }
 
-            // Preview "exact" pour ce que tu vas ajouter, en tenant compte des articles déjà ajoutés dans la vente
-            function previewCogsForCurrentSale(produit, qtyToAdd) {
-                // NORMALISER pour comparaison cohérente
-                const produitNorm = normaliserNomProduit(produit);
+        // Preview "exact" pour ce que tu vas ajouter, en tenant compte des articles déjà ajoutés dans la vente
+        function previewCogsForCurrentSale(produit, qtyToAdd) {
+            // NORMALISER pour comparaison cohérente
+            const produitNorm = normaliserNomProduit(produit);
                 
-                // TROUVER LA CLÉ RÉELLE dans le stock
-                let cleReelle = null;
-                if(stock[produit]) {
-                    cleReelle = produit;
-                } else {
-                    for(let cle in stock) {
-                        if(normaliserNomProduit(cle) === produitNorm) {
-                            cleReelle = cle;
-                            break;
-                        }
+            // TROUVER LA CLÉ RÉELLE dans le stock
+            let cleReelle = null;
+            if(stock[produit]) {
+                cleReelle = produit;
+            } else {
+                for(let cle in stock) {
+                    if(normaliserNomProduit(cle) === produitNorm) {
+                        cleReelle = cle;
+                        break;
                     }
                 }
-                
-                if(!cleReelle) {
-                    console.error('❌ Produit introuvable pour FIFO:', produit);
-                    return { ok: false, cogs: 0 };
-                }
-                
-                // Copier les lots avec la clé réelle
-                const lotsCopy = getLots(cleReelle).map(l => ({...l}));
-                
-                // Compter les quantités déjà ajoutées (comparaison normalisée)
-                const already = articlesVente
-                    .filter(a => normaliserNomProduit(a.produit) === produitNorm)
-                    .reduce((s, a) => s + (Number(a.quantite) || 0), 0);
-
-                const r1 = consumeLotsFIFO(lotsCopy, already);
-                const r2 = consumeLotsFIFO(lotsCopy, qtyToAdd);
-
-                console.log('🔄 FIFO Preview:', cleReelle, '→ Déjà:', already, '+ Ajout:', qtyToAdd, '→ COGS:', r2.cogs);
-
-                return { ok: r1.ok && r2.ok, cogs: r2.cogs };
             }
+                
+            if(!cleReelle) {
+                console.error('❌ Produit introuvable pour FIFO:', produit);
+                return { ok: false, cogs: 0 };
+            }
+                
+            // Compter les quantités déjà ajoutées (comparaison normalisée)
+            const already = articlesVente
+                .filter(a => normaliserNomProduit(a.produit) === produitNorm)
+                .reduce((s, a) => s + (Number(a.quantite) || 0), 0);
+                
+            // CORRECTION : Calculer le COGS pour le TOTAL (already + qtyToAdd)
+            const lotsForTotal = getLots(cleReelle).map(l => ({...l}));
+            const totalQty = already + qtyToAdd;
+            const resultTotal = consumeLotsFIFO(lotsForTotal, totalQty);
+                
+            if(!resultTotal.ok) {
+                console.log('❌ Stock insuffisant pour:', cleReelle, '→ Demandé:', totalQty, 'Dispo:', getStockQty(cleReelle));
+                return { ok: false, cogs: 0 };
+            }
+                
+            // Calculer le COGS pour "already" uniquement
+            const lotsForAlready = getLots(cleReelle).map(l => ({...l}));
+            const resultAlready = consumeLotsFIFO(lotsForAlready, already);
+                
+            // COGS de qtyToAdd = COGS total - COGS already
+            const cogsToAdd = resultTotal.cogs - resultAlready.cogs;
+                
+            console.log('🔄 FIFO Preview:', cleReelle);
+            console.log('  → Stock total:', getStockQty(cleReelle));
+            console.log('  → Déjà dans panier:', already);
+            console.log('  → Ajout demandé:', qtyToAdd);
+            console.log('  → COGS déjà:', resultAlready.cogs.toLocaleString(), 'Ar');
+            console.log('  → COGS total:', resultTotal.cogs.toLocaleString(), 'Ar');
+            console.log('  → COGS pour ajout:', cogsToAdd.toLocaleString(), 'Ar');
+            console.log('  → PA unitaire:', (cogsToAdd / qtyToAdd).toLocaleString(), 'Ar');
+
+            return { ok: true, cogs: cogsToAdd };
+        }
 
         function ajouterArticleVente() {
             const produit = normaliserNomProduit(document.getElementById('vente-produit-selected').value);
