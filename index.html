@@ -3976,45 +3976,67 @@
         function rechercherProduitDynamique() {
             clearTimeout(suggestionsTimeout);
             suggestionsTimeout = setTimeout(() => {
-                const search = normaliserNomProduit(document.getElementById('vente-search').value).toLowerCase();
+                const searchInput = document.getElementById('vente-search').value.trim();
                 const suggestionsBox = document.getElementById('suggestions-box');
 
-                if(search.length < 2) {
+                if(searchInput.length < 2) {
                     suggestionsBox.style.display = 'none';
                     return;
                 }
 
-                const produits = Object.keys(stock || {})
-                    .filter(p => getStockQty(p) > 0 && p.toLowerCase().includes(search))
+                // ✅ Normaliser la recherche
+                const searchNorm = normaliserNomProduit(searchInput);
+
+                // ✅ Créer un mapping : clé normalisée → clé originale
+                const produitsMap = new Map();
+                for(let cle in stock) {
+                    const cleNorm = normaliserNomProduit(cle);
+                    produitsMap.set(cleNorm, cle);
+                }
+
+                // ✅ Filtrer sur les clés normalisées
+                const produitsCorrespondants = Array.from(produitsMap.entries())
+                    .filter(([cleNorm, cleOriginale]) => {
+                        const qty = getStockQty(cleOriginale);
+                        return qty > 0 && cleNorm.includes(searchNorm);
+                    })
                     .slice(0, 20);
 
-                if(produits.length === 0) {
+                if(produitsCorrespondants.length === 0) {
                     suggestionsBox.innerHTML = '<div style="padding: 10px; color: #999;">Aucun produit trouvé</div>';
                     suggestionsBox.style.display = 'block';
                     return;
                 }
 
-                suggestionsBox.innerHTML = produits.map(p => `
-                <div class="suggestion-item"
-                    onmousedown="selectionnerProduit('${p.replace(/'/g, "\\'")}')"
-                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
-                    <strong>${p}</strong>
-                    <span style="color:#666; font-size:0.85em;">
-                        Stock: ${getStockQty(p)} ${(stock[p] && stock[p].unite) ? stock[p].unite : 'Pièce'}
-                    </span>
-                </div>
-                `).join('');
+                // ✅ Afficher avec les données correctes
+                suggestionsBox.innerHTML = produitsCorrespondants.map(([cleNorm, cleOriginale]) => {
+                    const produitData = stock[cleOriginale];
+                    const qty = getStockQty(cleOriginale);
+                    const unite = produitData?.unite || 'Pièce';
+                    
+                    return `
+                        <div class="suggestion-item"
+                            onmousedown="selectionnerProduit('${cleOriginale.replace(/'/g, "\\'")}', '${cleNorm.replace(/'/g, "\\'")}')"
+                            style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                            <strong>${cleOriginale}</strong>
+                            <span style="color:#666; font-size:0.85em;">
+                                Stock: ${qty} ${unite}
+                            </span>
+                        </div>
+                    `;
+                }).join('');
 
                 suggestionsBox.style.display = 'block';
             }, 300);
         }
 
 
-        function selectionnerProduit(produit) {
-        produit = normaliserNomProduit(produit);
-            document.getElementById('vente-search').value = produit;
-            document.getElementById('vente-produit-selected').value = produit;
+        function selectionnerProduit(nomOriginal, cleNormalisee) {
+            //  Stocker les DEUX versions
+            document.getElementById('vente-search').value = nomOriginal;  // Affichage utilisateur
+            document.getElementById('vente-produit-selected').value = cleNormalisee || normaliserNomProduit(nomOriginal);  // Clé pour recherche
             document.getElementById('suggestions-box').style.display = 'none';
+            
             chargerProduitVenteAutocomplete();
         }
 
@@ -4032,20 +4054,53 @@
         }
 
         function chargerProduitVenteAutocomplete() {
-            const p = document.getElementById('vente-produit-selected').value;
-            if(p && stock[p]) {
-                document.getElementById('vente-stock-dispo').value = getStockQty(p) + ' ' + (stock[p].unite || '');
-            } else {
+            const cleNormalisee = document.getElementById('vente-produit-selected').value;
+            
+            if(!cleNormalisee) {
                 document.getElementById('vente-stock-dispo').value = '';
+                if(typeof updateVenteCostAndMargeUI === 'function') updateVenteCostAndMargeUI();
+                return;
+            }
+            
+            // ✅ RECHERCHE INTELLIGENTE : Essayer plusieurs méthodes
+            let produitData = null;
+            let cleReelle = null;
+            
+            // Méthode 1 : Clé normalisée directe
+            if(stock[cleNormalisee]) {
+                produitData = stock[cleNormalisee];
+                cleReelle = cleNormalisee;
+            }
+            // Méthode 2 : Recherche manuelle par normalisation
+            else {
+                for(let cle in stock) {
+                    if(normaliserNomProduit(cle) === cleNormalisee) {
+                        produitData = stock[cle];
+                        cleReelle = cle;
+                        break;
+                    }
+                }
+            }
+            
+            // ✅ Afficher les données si trouvées
+            if(produitData && cleReelle) {
+                const qty = getStockQty(cleReelle);
+                const unite = produitData.unite || 'Pièce';
+                document.getElementById('vente-stock-dispo').value = qty + ' ' + unite;
+                
+                console.log('✅ Produit chargé:', cleReelle, '→ Stock:', qty, unite);
+            } else {
+                document.getElementById('vente-stock-dispo').value = '⚠️ Produit introuvable';
+                console.error('❌ Produit non trouvé dans stock:', cleNormalisee);
+                console.log('📦 Clés disponibles:', Object.keys(stock));
             }
 
-            // Ampiana: manavao revient/marge affiché ao Vente
+            // Mettre à jour revient/marge
             if(typeof updateVenteCostAndMargeUI === 'function') updateVenteCostAndMargeUI();
-
-            // Raha mampiasa “marge % cible” ka tianao hanolotra PV automatique:
+            
+            // Suggérer prix de vente
             if(typeof suggestPrixVenteFromMarge === 'function') suggestPrixVenteFromMarge();
         }
-
 
         function getLots(p){
             return (stock[p] && Array.isArray(stock[p].lots)) ? stock[p].lots : [];
