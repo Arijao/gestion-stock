@@ -4141,10 +4141,14 @@
 
         // Preview "exact" pour ce que tu vas ajouter, en tenant compte des articles déjà ajoutés dans la vente
         function previewCogsForCurrentSale(produit, qtyToAdd) {
-            // NORMALISER pour comparaison cohérente
+            // ===== DEBUG START =====
+            console.log('🔍 ===== DEBUG previewCogsForCurrentSale =====');
+            console.log('Produit demandé:', produit);
+            console.log('Quantité à ajouter:', qtyToAdd);
+            // ===== DEBUG END =====
+            
             const produitNorm = normaliserNomProduit(produit);
-                
-            // TROUVER LA CLÉ RÉELLE dans le stock
+            
             let cleReelle = null;
             if(stock[produit]) {
                 cleReelle = produit;
@@ -4156,22 +4160,47 @@
                     }
                 }
             }
-                
+            
             if(!cleReelle) {
                 console.error('❌ Produit introuvable pour FIFO:', produit);
                 return { ok: false, cogs: 0 };
             }
-                
-            // Compter les quantités déjà ajoutées (comparaison normalisée)
+            
+            // ===== DEBUG START =====
+            console.log('Clé réelle trouvée:', cleReelle);
+            console.log('stock[cleReelle]:', stock[cleReelle]);
+            
+            const lotsOriginal = getLots(cleReelle);
+            console.log('Lots originaux:', JSON.stringify(lotsOriginal, null, 2));
+            console.log('Quantité totale en stock:', getStockQty(cleReelle));
+            // ===== DEBUG END =====
+            
             const already = articlesVente
                 .filter(a => normaliserNomProduit(a.produit) === produitNorm)
                 .reduce((s, a) => s + (Number(a.quantite) || 0), 0);
-                
-            // CORRECTION : Calculer le COGS pour le TOTAL (already + qtyToAdd)
+            
+            // ===== DEBUG START =====
+            console.log('Quantité déjà dans le panier:', already);
+            console.log('Quantité totale demandée:', already + qtyToAdd);
+            // ===== DEBUG END =====
+            
             const lotsForTotal = getLots(cleReelle).map(l => ({...l}));
             const totalQty = already + qtyToAdd;
+            
+            // ===== DEBUG START =====
+            console.log('Lots copiés pour calcul total:', JSON.stringify(lotsForTotal, null, 2));
+            console.log('Appel consumeLotsFIFO avec qty:', totalQty);
+            // ===== DEBUG END =====
+            
             const resultTotal = consumeLotsFIFO(lotsForTotal, totalQty);
-                
+            
+            // ===== DEBUG START =====
+            console.log('Résultat consumeLotsFIFO:', resultTotal);
+            console.log('resultTotal.ok:', resultTotal.ok);
+            console.log('Lots après consommation:', JSON.stringify(lotsForTotal, null, 2));
+            console.log('🔍 ===== FIN DEBUG =====');
+            // ===== DEBUG END =====
+            
             if(!resultTotal.ok) {
                 console.log('❌ Stock insuffisant pour:', cleReelle, '→ Demandé:', totalQty, 'Dispo:', getStockQty(cleReelle));
                 return { ok: false, cogs: 0 };
