@@ -993,6 +993,47 @@
             color:#4b5563;
         }
 
+        /* Scroll horizontal uniquement pour les tableaux dans modals Achat/Vente */
+        #achat-modal .modal-body,
+        #vente-modal .modal-body {
+        overflow-y: auto;
+        overflow-x: hidden;
+        }
+
+        #achat-modal .modal-table-wrapper,
+        #vente-modal .modal-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        margin: 0;
+        border-radius: 8px;
+        }
+
+        /* Assurer que le tableau peut s'étendre selon son contenu */
+        #achat-modal .modal-table,
+        #vente-modal .modal-table {
+            min-width: 100%;
+            width: max-content;
+        }
+
+        /* Responsive mobile : forcer le scroll horizontal si nécessaire */
+        @media (max-width: 768px) {
+        #achat-modal .modal-table-wrapper,
+        #vente-modal .modal-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #achat-modal .modal-table th,
+        #achat-modal .modal-table td,
+        #vente-modal .modal-table th,
+        #vente-modal .modal-table td {
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        }
+
         /* ========== FIX SCROLL HORIZONTAL TABLEAUX MODALS ========== */
         .modal-table-wrapper {
             width: 100%;
