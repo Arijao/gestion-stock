@@ -994,32 +994,48 @@
         }
 
         /* ========== FIX SCROLL HORIZONTAL - MODALS ACHAT/VENTE UNIQUEMENT ========== */
+
+        /* Modal-body avec padding zéro */
         #achat-modal .modal-body,
         #vente-modal .modal-body {
             padding: 0 !important;
             overflow: hidden !important;
         }
 
+        /* Tous les enfants directs ont du padding */
         #achat-modal .modal-body > *,
         #vente-modal .modal-body > * {
-            padding: 0 18px;
-            margin: 16px 0;
-        }
-
-        #achat-modal .modal-table-wrapper,
-        #vente-modal .modal-table-wrapper {
-            padding: 0 !important;
+            padding: 0 18px !important;
             margin: 16px 0 !important;
-            overflow-x: scroll !important;
-            overflow-y: visible !important;
-            width: 100% !important;
         }
 
+        /* SAUF le wrapper du tableau qui doit sortir complètement */
+        #achat-modal .modal-body > .modal-table-wrapper,
+        #vente-modal .modal-body > .modal-table-wrapper {
+            padding: 0 !important;
+            margin: 16px -18px !important;
+            width: calc(100% + 36px) !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        /* Le tableau avec padding interne reconstitué */
         #achat-modal .modal-table,
         #vente-modal .modal-table {
             margin: 0 18px !important;
-            min-width: 600px !important;
+            min-width: calc(100% - 36px) !important;
+            width: max-content !important;
         }
+
+        /* Forcer le tableau à avoir une largeur minimale pour activer le scroll */
+        @media (max-width: 768px) {
+            #achat-modal .modal-table,
+            #vente-modal .modal-table {
+                min-width: 550px !important;
+            }
+        }
+
 
         /*DASHBOARD*/
         .app-mark{
