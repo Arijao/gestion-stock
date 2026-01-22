@@ -993,6 +993,20 @@
             color:#4b5563;
         }
 
+        /* ========== FIX SCROLL HORIZONTAL TABLEAUX MODALS ========== */
+        .modal-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            margin: 0;
+            border-radius: 8px;
+        }
+
+        .modal-table-wrapper table {
+            min-width: 100%;
+            width: max-content;
+        }
         .modal-table{
             width:100%;
             min-width: 100%;
@@ -3318,8 +3332,9 @@
             <div style="padding: 12px 18px; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
                 <p id="achat-modal-info" style="margin: 0; font-size: 13px; color: #4b5563;"></p>
             </div>
-            <div class="modal-body" style="overflow: visible !important; padding: 0 !important;">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px 18px 18px;">
+            <div class="modal-body">
+                <!-- ✅ UTILISATION DU NOUVEAU WRAPPER -->
+                <div class="modal-table-wrapper">
                     <table class="modal-table">
                         <thead>
                             <tr>
@@ -3341,7 +3356,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- ✅ MODAL COMPARAISON PRIX - ASIO ETO -->
@@ -5282,35 +5296,36 @@
                         <div class="modal-body">
                             <p class="modal-info">Date: ${h.date} | Client: ${h.tiers} | Adresse: ${h.adresse || 'N/A'}</p>
 
-                            <table class="modal-table">
-                                <thead>
-                                    <tr>
-                                        <th>Produit</th>
-                                        <th>Qté</th>
-                                        <th>Unit</th>
-                                        <th>P.U</th>
-                                        <th>Montant</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${h.articles.map(a => `
+                            <div class="modal-table-wrapper">
+                                <table class="modal-table">
+                                    <thead>
                                         <tr>
-                                            <td>${a.produit}</td>
-                                            <td>${a.quantite}</td>
-                                            <td>${a.unite}</td>
-                                            <td>${a.prix.toLocaleString()} Ar</td>
-                                            <td>${a.total.toLocaleString()} Ar</td>
+                                            <th>Produit</th>
+                                            <th>Qté</th>
+                                            <th>Unit</th>
+                                            <th>P.U</th>
+                                            <th>Montant</th>
                                         </tr>
-                                    `).join('')}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="4" style="text-align:right;font-weight:600">Total</td>
-                                        <td>${h.total.toLocaleString()} Ar</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-
+                                    </thead>
+                                    <tbody>
+                                        ${h.articles.map(a => `
+                                            <tr>
+                                                <td>${a.produit}</td>
+                                                <td>${a.quantite}</td>
+                                                <td>${a.unite}</td>
+                                                <td>${a.prix.toLocaleString()} Ar</td>
+                                                <td>${a.total.toLocaleString()} Ar</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4" style="text-align:right;font-weight:600">Total</td>
+                                            <td>${h.total.toLocaleString()} Ar</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>    
                             ${h.statutPaiement !== 'payé' ? `
                                 <div style="background:#fef3c7; padding:12px; border-radius:8px; margin-top:16px; border-left:4px solid #f59e0b;">
                                     <strong>💳 Informations paiement</strong><br>
