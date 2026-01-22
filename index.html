@@ -984,8 +984,7 @@
 
         .modal-body{
             padding:16px 18px 18px;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow:auto;
         }
 
         .modal-info{
@@ -1001,12 +1000,12 @@
             overflow-y: visible;
             -webkit-overflow-scrolling: touch;
             margin: 0;
-            padding: 0;     
+            border-radius: 8px;
         }
 
         .modal-table-wrapper table {
-            min-width: 600px;
-            width: auto;
+            min-width: 100%;
+            width: max-content;
         }
         .modal-table{
             width:100%;
