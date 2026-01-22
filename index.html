@@ -4139,19 +4139,44 @@
             return { ok: q === 0, cogs };
             }
 
-            // Preview “exact” pour ce que tu vas ajouter, en tenant compte des articles déjà ajoutés dans la vente
-            function previewCogsForCurrentSale(produit, qtyToAdd){
-            const lotsCopy = getLots(produit).map(l => ({...l})); // copie
-            const already = articlesVente
-                .filter(a => a.produit === produit)
-                .reduce((s,a)=> s + (Number(a.quantite)||0), 0);
+            // Preview "exact" pour ce que tu vas ajouter, en tenant compte des articles déjà ajoutés dans la vente
+            function previewCogsForCurrentSale(produit, qtyToAdd) {
+                // NORMALISER pour comparaison cohérente
+                const produitNorm = normaliserNomProduit(produit);
+                
+                // TROUVER LA CLÉ RÉELLE dans le stock
+                let cleReelle = null;
+                if(stock[produit]) {
+                    cleReelle = produit;
+                } else {
+                    for(let cle in stock) {
+                        if(normaliserNomProduit(cle) === produitNorm) {
+                            cleReelle = cle;
+                            break;
+                        }
+                    }
+                }
+                
+                if(!cleReelle) {
+                    console.error('❌ Produit introuvable pour FIFO:', produit);
+                    return { ok: false, cogs: 0 };
+                }
+                
+                // Copier les lots avec la clé réelle
+                const lotsCopy = getLots(cleReelle).map(l => ({...l}));
+                
+                // Compter les quantités déjà ajoutées (comparaison normalisée)
+                const already = articlesVente
+                    .filter(a => normaliserNomProduit(a.produit) === produitNorm)
+                    .reduce((s, a) => s + (Number(a.quantite) || 0), 0);
 
-            const r1 = consumeLotsFIFO(lotsCopy, already);
-            const r2 = consumeLotsFIFO(lotsCopy, qtyToAdd);
+                const r1 = consumeLotsFIFO(lotsCopy, already);
+                const r2 = consumeLotsFIFO(lotsCopy, qtyToAdd);
 
-            return { ok: r1.ok && r2.ok, cogs: r2.cogs };
+                console.log('🔄 FIFO Preview:', cleReelle, '→ Déjà:', already, '+ Ajout:', qtyToAdd, '→ COGS:', r2.cogs);
+
+                return { ok: r1.ok && r2.ok, cogs: r2.cogs };
             }
-
 
         function ajouterArticleVente() {
             const produit = normaliserNomProduit(document.getElementById('vente-produit-selected').value);
@@ -4229,20 +4254,48 @@
             afficherArticlesVente();
         }
 
-        function updateVenteCostAndMargeUI(){
-            const p = document.getElementById('vente-produit-selected').value;
+        function updateVenteCostAndMargeUI() {
+            const cleNormalisee = document.getElementById('vente-produit-selected').value;
             const q = parseFloat(document.getElementById('vente-quantite').value) || 0;
             const pv = parseFloat(document.getElementById('vente-prix').value) || 0;
 
-            if(!p || !stock[p] || q <= 0){
+            if(!cleNormalisee || q <= 0) {
                 document.getElementById('vente-pa-unit').value = '';
                 document.getElementById('vente-revient-total').value = '';
                 document.getElementById('vente-marge-total').value = '';
                 return;
             }
 
-            const r = previewCogsForCurrentSale(p, q);
-            if(!r.ok){
+            // RECHERCHE INTELLIGENTE : Trouver la vraie clé
+            let cleReelle = null;
+            
+            // Méthode 1 : Clé normalisée directe
+            if(stock[cleNormalisee]) {
+                cleReelle = cleNormalisee;
+            }
+            // Méthode 2 : Recherche manuelle
+            else {
+                for(let cle in stock) {
+                    if(normaliserNomProduit(cle) === cleNormalisee) {
+                        cleReelle = cle;
+                        break;
+                    }
+                }
+            }
+
+            // Si produit introuvable
+            if(!cleReelle || !stock[cleReelle]) {
+                document.getElementById('vente-pa-unit').value = '';
+                document.getElementById('vente-revient-total').value = '⚠️ Produit introuvable';
+                document.getElementById('vente-marge-total').value = '';
+                console.error('❌ Produit non trouvé pour calcul COGS:', cleNormalisee);
+                return;
+            }
+
+            // Utiliser la clé réelle pour le calcul FIFO
+            const r = previewCogsForCurrentSale(cleReelle, q);
+            
+            if(!r.ok) {
                 document.getElementById('vente-pa-unit').value = '';
                 document.getElementById('vente-revient-total').value = 'Stock insuffisant';
                 document.getElementById('vente-marge-total').value = '';
@@ -4256,9 +4309,11 @@
             document.getElementById('vente-pa-unit').value = paUnit.toLocaleString() + ' Ar';
             document.getElementById('vente-revient-total').value = revientTotal.toLocaleString() + ' Ar';
             document.getElementById('vente-marge-total').value = margeTot.toLocaleString() + ' Ar';
+            
+            console.log('💰 COGS calculé:', cleReelle, '→ PA unitaire:', paUnit.toFixed(2), 'Ar');
         }
 
-        // ✅ NOUVELLE FONCTION: Changer type calcul
+        // NOUVELLE FONCTION: Changer type calcul
         function changerTypeCalcul() {
             const type = document.getElementById('marge-type').value;
             const label = document.getElementById('marge-label');
