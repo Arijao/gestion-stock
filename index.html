@@ -993,106 +993,97 @@
             color:#4b5563;
         }
 
-        /* Scroll horizontal uniquement pour les tableaux dans modals Achat/Vente */
-        #achat-modal .modal-body,
-        #vente-modal .modal-body {
-        overflow-y: auto;
-        overflow-x: hidden;
+        /* ========== FIX SCROLL HORIZONTAL - MODALS ACHAT/VENTE UNIQUEMENT ========== */
+
+        /* Forcer le modal à ne pas déborder */
+        #achat-modal .modal,
+        #vente-modal .modal {
+        max-width: min(700px, 95vw);
+        overflow: hidden;
         }
 
+        /* Modal-body sans padding horizontal, scroll vertical seulement */
+        #achat-modal .modal-body,
+        #vente-modal .modal-body {
+        padding: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-width: 100%;
+        }
+
+        /* Ajouter padding à tous les éléments SAUF le wrapper du tableau */
+        #achat-modal .modal-body > *:not(.modal-table-wrapper),
+        #vente-modal .modal-body > *:not(.modal-table-wrapper) {
+        padding-left: 18px;
+        padding-right: 18px;
+        box-sizing: border-box;
+        }
+
+        /* Espacement vertical pour les éléments */
+        #achat-modal .modal-body > *:first-child,
+        #vente-modal .modal-body > *:first-child {
+        padding-top: 16px;
+        }
+
+        #achat-modal .modal-body > *:last-child,
+        #vente-modal .modal-body > *:last-child {
+        padding-bottom: 18px;
+        }
+
+        /* Wrapper du tableau : pleine largeur avec scroll horizontal */
         #achat-modal .modal-table-wrapper,
         #vente-modal .modal-table-wrapper {
         width: 100%;
         overflow-x: auto;
         overflow-y: visible;
         -webkit-overflow-scrolling: touch;
-        margin: 0;
-        border-radius: 8px;
+        margin: 16px 0;
+        padding: 0 18px;
+        box-sizing: border-box;
         }
 
-        /* Assurer que le tableau peut s'étendre selon son contenu */
+        /* Le tableau peut dépasser sa zone */
         #achat-modal .modal-table,
         #vente-modal .modal-table {
-            min-width: 100%;
-            width: max-content;
+        width: 100%;
+        min-width: 500px;
+        border-collapse: collapse;
+        background: white;
+        margin: 0;
         }
 
-        /* Responsive mobile : forcer le scroll horizontal si nécessaire */
-        @media (max-width: 768px) {
-        #achat-modal .modal-table-wrapper,
-        #vente-modal .modal-table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        /* Cellules du tableau */
+        #achat-modal .modal-table th,
+        #achat-modal .modal-table td,
+        #vente-modal .modal-table th,
+        #vente-modal .modal-table td {
+        padding: 8px 10px;
+        border: 1px solid #e5e7eb;
+        font-size: 12px;
+        white-space: nowrap;
+        }
+
+        #achat-modal .modal-table th,
+        #vente-modal .modal-table th {
+        background: #111827;
+        color: #f9fafb;
+        text-align: left;
+        }
+
+        /* Mobile : forcer min-width plus petit */
+        @media (max-width: 640px) {
+        #achat-modal .modal-table,
+        #vente-modal .modal-table {
+            min-width: 450px;
         }
         
         #achat-modal .modal-table th,
         #achat-modal .modal-table td,
         #vente-modal .modal-table th,
         #vente-modal .modal-table td {
-            white-space: nowrap;
-            min-width: 80px;
+            min-width: 70px;
         }
         }
-
-        /* DIAGNOSTIC TEMPORAIRE - À retirer après test */
-        #achat-modal .modal-body *,
-        #vente-modal .modal-body * {
-        outline: 1px solid red !important;
-        }
-
-        #achat-modal .modal-table-wrapper,
-        #vente-modal .modal-table-wrapper {
-        outline: 3px solid blue !important;
-        }
-
-        #achat-modal .modal-body > *,
-        #vente-modal .modal-body > * {
-        max-width: 100%;
-        box-sizing: border-box;
-        }
-
-        /* ========== FIX SCROLL HORIZONTAL TABLEAUX MODALS ========== */
-        .modal-table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: visible;
-            -webkit-overflow-scrolling: touch;
-            margin: 0;
-            border-radius: 8px;
-        }
-
-        .modal-table-wrapper table {
-            min-width: 100%;
-            width: max-content;
-        }
-        .modal-table{
-            width:100%;
-            min-width: 100%;
-            border-collapse:collapse;
-            background:white;
-        }
-        
-        @media (max-width: 640px) {
-            .modal-table {
-                display: block;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-
-        .modal-table th,
-        .modal-table td{
-            padding:8px 10px;
-            border:1px solid #e5e7eb;
-            font-size:12px;
-        }
-
-        .modal-table th{
-            background:#111827;
-            color:#f9fafb;
-            text-align:left;
-        }
-
         /*DASHBOARD*/
         .app-mark{
             display:inline-flex;
