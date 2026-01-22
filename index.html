@@ -995,61 +995,68 @@
 
         /* ========== FIX SCROLL HORIZONTAL - MODALS ACHAT/VENTE UNIQUEMENT ========== */
 
-        /* Forcer le modal à ne pas déborder */
+        /* Forcer le conteneur modal à ne pas déborder */
         #achat-modal .modal,
         #vente-modal .modal {
-        max-width: min(700px, 95vw);
-        overflow: hidden;
+        max-width: min(700px, 95vw) !important;
+        overflow: hidden !important;
         }
 
-        /* Modal-body sans padding horizontal, scroll vertical seulement */
+        /* Modal-body : retirer le padding horizontal et forcer overflow */
         #achat-modal .modal-body,
         #vente-modal .modal-body {
-        padding: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        max-width: 100%;
+        padding: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        max-width: 100% !important;
         }
 
-        /* Ajouter padding à tous les éléments SAUF le wrapper du tableau */
-        #achat-modal .modal-body > *:not(.modal-table-wrapper),
-        #vente-modal .modal-body > *:not(.modal-table-wrapper) {
-        padding-left: 18px;
-        padding-right: 18px;
-        box-sizing: border-box;
+        /* Ajouter padding uniquement aux éléments directs SAUF le wrapper tableau */
+        #achat-modal .modal-body > *,
+        #vente-modal .modal-body > * {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+        box-sizing: border-box !important;
         }
 
-        /* Espacement vertical pour les éléments */
+        /* Retirer le padding du wrapper pour qu'il prenne toute la largeur */
+        #achat-modal .modal-body > .modal-table-wrapper,
+        #vente-modal .modal-body > .modal-table-wrapper {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        }
+
+        /* Espacement vertical */
         #achat-modal .modal-body > *:first-child,
         #vente-modal .modal-body > *:first-child {
-        padding-top: 16px;
+        padding-top: 16px !important;
         }
 
         #achat-modal .modal-body > *:last-child,
         #vente-modal .modal-body > *:last-child {
-        padding-bottom: 18px;
+        padding-bottom: 18px !important;
         }
 
-        /* Wrapper du tableau : pleine largeur avec scroll horizontal */
+        /* Wrapper du tableau avec scroll horizontal */
         #achat-modal .modal-table-wrapper,
         #vente-modal .modal-table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: visible;
-        -webkit-overflow-scrolling: touch;
-        margin: 16px 0;
-        padding: 0 18px;
-        box-sizing: border-box;
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 16px 0 !important;
+        padding: 0 18px !important;
+        box-sizing: border-box !important;
         }
 
-        /* Le tableau peut dépasser sa zone */
+        /* Le tableau avec largeur minimale pour forcer le scroll */
         #achat-modal .modal-table,
         #vente-modal .modal-table {
-        width: 100%;
-        min-width: 500px;
-        border-collapse: collapse;
-        background: white;
-        margin: 0;
+        width: 100% !important;
+        min-width: 550px !important;
+        border-collapse: collapse !important;
+        background: white !important;
+        margin: 0 !important;
         }
 
         /* Cellules du tableau */
@@ -1057,33 +1064,27 @@
         #achat-modal .modal-table td,
         #vente-modal .modal-table th,
         #vente-modal .modal-table td {
-        padding: 8px 10px;
-        border: 1px solid #e5e7eb;
-        font-size: 12px;
-        white-space: nowrap;
+        padding: 8px 10px !important;
+        border: 1px solid #e5e7eb !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
         }
 
         #achat-modal .modal-table th,
         #vente-modal .modal-table th {
-        background: #111827;
-        color: #f9fafb;
-        text-align: left;
+        background: #111827 !important;
+        color: #f9fafb !important;
+        text-align: left !important;
         }
 
-        /* Mobile : forcer min-width plus petit */
+        /* Mobile responsive */
         @media (max-width: 640px) {
         #achat-modal .modal-table,
         #vente-modal .modal-table {
-            min-width: 450px;
-        }
-        
-        #achat-modal .modal-table th,
-        #achat-modal .modal-table td,
-        #vente-modal .modal-table th,
-        #vente-modal .modal-table td {
-            min-width: 70px;
+            min-width: 480px !important;
         }
         }
+
         /*DASHBOARD*/
         .app-mark{
             display:inline-flex;
