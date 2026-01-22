@@ -3317,25 +3317,28 @@
             </div>
             <div class="modal-body">
                 <p id="achat-modal-info" class="modal-info"></p>
-                <table class="modal-table">
-                    <thead>
-                        <tr>
-                            <th>Produit</th>
-                            <th>Qté</th>
-                            <th>Unité</th>
-                            <th>Prix U</th>
-                            <th>Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody id="achat-modal-tbody"></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4" style="text-align:right;font-weight:600;">Total</td>
-                            <td id="achat-modal-total"></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 0 20px;">
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Qté</th>
+                                <th>Unité</th>
+                                <th>Prix U</th>
+                                <th>Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody id="achat-modal-tbody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" style="text-align:right;font-weight:600;">Total</td>
+                                <td id="achat-modal-total"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
+
         </div>
     </div>
 
