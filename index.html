@@ -2099,7 +2099,17 @@
             font-style: italic;
         }
 
-    
+        /* ========== ALERTE QUANTITÉ INSUFFISANTE - VENTE ========== */
+        .quantite-error {
+            border-color: #dc2626 !important;
+            background: #fef2f2 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+        }
+
+        .quantite-error:focus {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+        }
         /* Fix for grid on large screens */
         @media (min-width: 1200px) {
             .form-grid {
@@ -3022,7 +3032,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Quantité</label>
-                                <input type="number" id="vente-quantite" min="1" oninput="updateVenteCostAndMargeUI()">
+                                <input type="number" id="vente-quantite" min="1" oninput="updateVenteCostAndMargeUI(); validerQuantiteVente();">
                             </div>
                         </div>
                         
@@ -4584,6 +4594,28 @@
             afficherArticlesVente();
         }
 
+        // ========== VALIDATION QUANTITÉ EN TEMPS RÉEL - VENTE ==========
+        function validerQuantiteVente() {
+            const quantiteInput = document.getElementById('vente-quantite');
+            const stockDispoInput = document.getElementById('vente-stock-dispo');
+            
+            if (!quantiteInput || !stockDispoInput) return;
+            
+            const quantiteSaisie = parseFloat(quantiteInput.value) || 0;
+            const stockDispoText = stockDispoInput.value;
+            
+            // Extraire le nombre du texte "X unités disponibles"
+            const stockMatch = stockDispoText.match(/(\d+(\.\d+)?)/);
+            const stockDispo = stockMatch ? parseFloat(stockMatch[1]) : 0;
+            
+            // Appliquer ou retirer la classe d'erreur
+            if (quantiteSaisie > 0 && quantiteSaisie > stockDispo) {
+                quantiteInput.classList.add('quantite-error');
+            } else {
+                quantiteInput.classList.remove('quantite-error');
+            }
+        }
+
         function updateVenteCostAndMargeUI() {
             const cleNormalisee = document.getElementById('vente-produit-selected').value;
             const q = parseFloat(document.getElementById('vente-quantite').value) || 0;
@@ -4641,6 +4673,7 @@
             document.getElementById('vente-marge-total').value = margeTot.toLocaleString() + ' Ar';
             
             console.log('💰 COGS calculé:', cleReelle, '→ PA unitaire:', paUnit.toFixed(2), 'Ar');
+            validerQuantiteVente();
         }
 
         // NOUVELLE FONCTION: Changer type calcul
