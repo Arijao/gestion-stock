@@ -2793,6 +2793,10 @@
 
                         <!-- Section: Liste demandes -->
                         <div id="dp-liste-section" style="display:none;">
+                            <!-- NOUVEAU : Barre de recherche -->
+                            <div class="search-box">
+                                <input type="text" id="search-dp" placeholder="Rechercher par produit, ID, fournisseur..." onkeyup="rechercherDPDebounced()">
+                            </div>
                             <div class="section-title">Demandes en Cours</div>
                             <div class="table-container">
                                 <table id="dp-table">
@@ -2849,6 +2853,7 @@
                                         <tbody id="dp-selected-tbody"></tbody>
                                     </table>
                                 </div>
+                                <div id="dp-pagination"></div>
                             </div>
 
                         </div>
@@ -3502,10 +3507,18 @@
         let stockPerPage = 10;
         let historiquePage = 1;
         let historiquePerPage = 10;
-        //✅ FILTRES
+        // FILTRES
         let stockSearchQuery = '';
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
+
+        // PAGINATION DEMANDES PRIX
+        let dpPage = 1;
+        let dpPerPage = 10;
+
+        // FILTRES DEMANDES PRIX
+        let dpSearchQuery = "";
+
  
         // ==================== SYSTÈME D'UNITÉS CENTRALISÉ ====================
 
@@ -8178,73 +8191,144 @@
         }
 
         function afficherDemandesPrix() {
-            const tbody = document.getElementById('dp-tbody');
-            const section = document.getElementById('dp-liste-section');
-            const filterEl = document.getElementById('dp-filter-statut');
-            const filtre = filterEl ? filterEl.value : 'tous';
+            const tbody = document.getElementById("dp-tbody");
+            const section = document.getElementById("dp-liste-section");
+            const filterEl = document.getElementById("dp-filter-statut");
+            const filtre = filterEl ? filterEl.value : "tous";
 
             if (!demandesPrix || !demandesPrix.length) {
-                if (section) section.style.display = 'none';
-
-                const selBody = document.getElementById('dp-selected-tbody');
-                if (selBody) selBody.innerHTML = '';
-                const budgetEl = document.getElementById('dp-budget-total');
-                if (budgetEl) budgetEl.textContent = '0 Ar';
+                if (section) section.style.display = "none";
+                const selBody = document.getElementById("dp-selected-tbody");
+                if (selBody) selBody.innerHTML = "";
+                const budgetEl = document.getElementById("dp-budget-total");
+                if (budgetEl) budgetEl.textContent = "0 Ar";
                 return;
             }
 
-            if (section) section.style.display = 'block';
-            if (tbody) tbody.innerHTML = '';
+            if (section) section.style.display = "block";
+            if (tbody) tbody.innerHTML = "";
 
-            // Appliquer filtre
+            // Appliquer filtre statut
             let liste = demandesPrix.slice();
-            if (filtre === 'en_attente') {
-                liste = liste.filter(d => d.statut === 'en_attente');
-            } else if (filtre === 'validé') {
-                liste = liste.filter(d => d.statut === 'validé');
+            if (filtre === "enattente") {
+                liste = liste.filter(d => d.statut === "enattente");
+            } else if (filtre === "valid") {
+                liste = liste.filter(d => d.statut === "valid");
             }
 
-            // Affichage tableau principal
-            liste.slice().reverse().forEach(d => {
+            // RECHERCHE INTELLIGENTE (identique à historique)
+            let filteredItems = liste;
+            if (dpSearchQuery && dpSearchQuery.trim() !== "") {
+                const query = dpSearchQuery.toLowerCase().trim();
+                
+                filteredItems = liste.filter(d => {
+                // Recherche dans : ID, produit, fournisseurs, quantité, statut
+                const searchBase = `${d.id} ${d.produit} ${d.quantite} ${d.unite} ${d.statut} ${d.date}`.toLowerCase();
+                
+                // Recherche dans les noms de fournisseurs
+                const searchFournisseurs = d.fournisseurs && d.fournisseurs.length > 0
+                    ? d.fournisseurs.map(f => f.nom.toLowerCase()).join(" ")
+                    : "";
+                
+                const allSearchableText = searchBase + " " + searchFournisseurs;
+                return allSearchableText.includes(query);
+                });
+            }
+
+            // PAGINATION (identique à stock/historique)
+            const totalItems = filteredItems.length;
+            const startIdx = (dpPage - 1) * dpPerPage;
+            const endIdx = startIdx + dpPerPage;
+            const pageItems = filteredItems.slice(startIdx, endIdx);
+
+            // Aucun résultat (identique à historique)
+            if (pageItems.length === 0) {
+                tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:30px; color:#6b7280">
+                    <i class="fa-solid fa-search" style="font-size:40px; margin-bottom:10px; opacity:0.3"></i>
+                    <p style="margin:0; font-weight:600">Aucun résultat trouvé</p>
+                    <p style="margin:5px 0 0 0; font-size:12px">Essayez avec d'autres mots-clés</p>
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            // Affichage des résultats (ordre inversé)
+            pageItems.slice().reverse().forEach(d => {
                 const idx = demandesPrix.indexOf(d); // index global
                 const nbOffres = d.fournisseurs ? d.fournisseurs.length : 0;
                 const prixMin = nbOffres > 0 ? Math.min(...d.fournisseurs.map(f => Number(f.prix || 0))) : 0;
 
-                let badge = '';
-                if (d.statut === 'validé') {
-                    badge = '<span style="background:#16a34a; color:white; padding:3px 8px; border-radius:8px; font-size:11px;">✓ Validé</span>';
-                } else if (d.statut === 'annulé') {
-                    badge = '<span style="background:#6b7280; color:white; padding:3px 8px; border-radius:8px; font-size:11px;">✗ Annulé</span>';
-                } else {
-                    badge = '<span style="background:#f59e0b; color:white; padding:3px 8px; border-radius:8px; font-size:11px;">⏳ En cours</span>';
+                let badgeStatut = "";
+                if (d.statut === "enattente") {
+                badgeStatut = `<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #f59e0b">En attente</span>`;
+                } else if (d.statut === "valid") {
+                badgeStatut = `<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #16a34a">Validé</span>`;
+                } else if (d.statut === "annul") {
+                badgeStatut = `<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #dc2626">Annulé</span>`;
                 }
 
                 tbody.innerHTML += `
-                    <tr>
-                        <td>${d.id}</td>
-                        <td><strong>${d.produit}</strong></td>
-                        <td style="text-align:right;">${d.quantite} ${d.unite}</td>
-                        <td style="text-align:right;">${nbOffres}</td>
-                        <td style="text-align:right;">${prixMin > 0 ? prixMin.toLocaleString('fr-FR') + ' Ar' : '-'}</td>
-                        <td>${badge}</td>
-                        <td>
-                            <div style="display:flex; gap:4px;">
-                                <button class="btn-compact" onclick="ouvrirComparaisonModal(${idx})" title="Comparer / Voir">
-                                    <i class="fa-solid fa-scale-balanced"></i>
-                                </button>
-                                ${d.statut === 'en_attente' ? `
-                                <button class="btn-compact btn-compact-danger" onclick="supprimerDemande(${idx})" title="Supprimer">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                <tr>
+                    <td><strong>${d.id}</strong><br><small style="color:#6b7280">${d.date}</small></td>
+                    <td>${d.produit}</td>
+                    <td style="text-align:right">${d.quantite} ${d.unite}</td>
+                    <td style="text-align:right">${nbOffres}</td>
+                    <td style="text-align:right">${prixMin > 0 ? prixMin.toLocaleString() + " Ar" : "-"}</td>
+                    <td>${badgeStatut}</td>
+                    <td style="text-align:center">
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:center">
+                        <button class="btn-compact" onclick="ouvrirComparaisonModal(${idx})" title="Comparer offres">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        </button>
+                        ${d.statut === "valid" ? `
+                        <button class="btn-compact" style="background:#3b82f6" onclick="modifierDemandeValidee(${idx})" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        ` : ""}
+                        <button class="btn-compact btn-compact-danger" onclick="supprimerDemande(${idx})" title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    </td>
+                </tr>`;
             });
 
+            // CRÉER PAGINATION (identique à stock/historique)
+            createPagination("dp-pagination", dpPage, totalItems, dpPerPage, goToDPPage, changeDPPerPage);
+
+            // Mise à jour budget et récap
             calculerBudgetSelection();
             rafraichirRecapSelection();
-        }
+            }
+
+            // FONCTIONS DE PAGINATION
+            function goToDPPage(page) {
+            dpPage = page;
+            afficherDemandesPrix();
+            }
+
+            function changeDPPerPage(perPage) {
+            dpPerPage = parseInt(perPage, 10);
+            dpPage = 1;
+            afficherDemandesPrix();
+            }
+
+            // RECHERCHE
+            function rechercherDP() {
+            dpSearchQuery = document.getElementById("search-dp").value.toLowerCase();
+            dpPage = 1;
+            afficherDemandesPrix();
+            }
+
+            // DEBOUNCE
+            let dpSearchTimeout;
+            function rechercherDPDebounced() {
+            clearTimeout(dpSearchTimeout);
+            dpSearchTimeout = setTimeout(rechercherDP, 300);
+            }
+
 
         function calculerBudgetSelection() {
             if (!Array.isArray(demandesPrix)) return 0;
