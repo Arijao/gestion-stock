@@ -3649,6 +3649,14 @@
 
         }
 
+        // ========================================
+        // FONCTION DE NORMALISATION
+        // ========================================
+        function normaliserNom(nom) {
+            if (!nom) return '';
+            return nom.trim().toLowerCase();
+        }
+
         //----  -DASHBOARD -------//
 
         function parseISODate(d){ return new Date(d + "T00:00:00"); }
@@ -3814,32 +3822,32 @@
             document.getElementById(type + '-numero').value = `${prefix}-${y}${m}-${String(count).padStart(4, '0')}`;
         }
 
-        function ajouterArticleAchat() {
-            const produit = normaliserNomProduit(document.getElementById('achat-produit').value);
-            const quantite = parseFloat(document.getElementById('achat-quantite').value);
-            const prix = parseFloat(document.getElementById('achat-prix').value);
-            const unite = document.getElementById('achat-unite').value;
+    function ajouterArticleAchat() {
+        const produit = normaliserNomProduit(document.getElementById('achat-produit').value);
+        const quantite = parseFloat(document.getElementById('achat-quantite').value);
+        const prix = parseFloat(document.getElementById('achat-prix').value);
+        const unite = document.getElementById('achat-unite').value;
             
-            if(!produit || !quantite || !prix) {
-                alert('Remplissez tous les champs');
-                return;
-            }
-            
-            articlesAchat.push({
-                produit: produit,
-                quantite: quantite,
-                prix: prix,
-                unite: unite,
-                total: quantite * prix
-            });
-            
-            document.getElementById('achat-produit').value = '';
-            document.getElementById('achat-quantite').value = '';
-            document.getElementById('achat-prix').value = '';
-            document.getElementById('achat-unite').selectedIndex = 0;
-
-            afficherArticlesAchat();
+        if(!produit || !quantite || !prix) {
+            alert('Remplissez tous les champs');
+            return;
         }
+            
+        articlesAchat.push({
+            produit: produit,
+            quantite: quantite,
+            prix: prix,
+            unite: unite,
+            total: quantite * prix
+        });
+            
+        document.getElementById('achat-produit').value = '';
+        document.getElementById('achat-quantite').value = '';
+        document.getElementById('achat-prix').value = '';
+        document.getElementById('achat-unite').selectedIndex = 0;
+
+        afficherArticlesAchat();
+    }
         
         function afficherArticlesAchat() {
             const tbody = document.getElementById('achat-tbody');
@@ -3901,25 +3909,35 @@
 
             // --- Mise à jour stock (lots) ---
             articlesAchat.forEach(a => {
-                if (!stock[a.produit]) {
-                stock[a.produit] = { unite: a.unite, lots: [] };
+                // ✅ NORMALISATION FORCÉE : Toujours utiliser la clé normalisée
+                const cleNormalisee = normaliserNomProduit(a.produit);
+                
+                if (!stock[cleNormalisee]) {
+                    stock[cleNormalisee] = { unite: a.unite, lots: [] };
                 }
-                if (!stock[a.produit].lots) stock[a.produit].lots = [];
+                if (!stock[cleNormalisee].lots) stock[cleNormalisee].lots = [];
 
-                stock[a.produit].unite = a.unite;
-                stock[a.produit].lots.push({
-                qte: Number(a.quantite),
-                prix: Number(a.prix),
-                date: date
+                stock[cleNormalisee].unite = a.unite;
+                stock[cleNormalisee].lots.push({
+                    qte: Number(a.quantite),
+                    prix: Number(a.prix),
+                    date: date
                 });
+                
+                console.log('✅ Achat enregistré:', cleNormalisee, '→ Qté:', a.quantite, 'Prix:', a.prix, 'Ar');
             });
 
-            // --- Historique ---
+            // --- Historique (avec noms normalisés) ---
+            const articlesNormalises = articlesAchat.map(a => ({
+                ...a,
+                produit: normaliserNomProduit(a.produit)  // ✅ Normaliser pour l'historique aussi
+            }));
+            
             historique.push({
                 type: 'achat',
                 date: date,
                 tiers: fournisseur,
-                articles: [...articlesAchat],
+                articles: articlesNormalises,
                 total: articlesAchat.reduce((s, a) => s + a.total, 0),
                 pieces: pieces
             });
@@ -3936,7 +3954,6 @@
             mettreAJourSelect();
             updateStockValueUI({ objectif: 500000 });
         }
-
         function resetAchatForm() {
             articlesAchat = [];
             document.getElementById('achat-fournisseur').value = '';
