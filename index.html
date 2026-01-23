@@ -8256,44 +8256,57 @@
 
             // Affichage des résultats (ordre inversé)
             pageItems.slice().reverse().forEach(d => {
-                const idx = demandesPrix.indexOf(d); // index global
-                const nbOffres = d.fournisseurs ? d.fournisseurs.length : 0;
-                const prixMin = nbOffres > 0 ? Math.min(...d.fournisseurs.map(f => Number(f.prix || 0))) : 0;
+            const idx = demandesPrix.indexOf(d); // index global
+            const nbOffres = d.fournisseurs ? d.fournisseurs.length : 0;
+            const prixMin = nbOffres > 0 ? Math.min(...d.fournisseurs.map(f => Number(f.prix || 0))) : 0;
 
-                let badgeStatut = "";
-                if (d.statut === "enattente") {
-                badgeStatut = `<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #f59e0b">En attente</span>`;
-                } else if (d.statut === "valid") {
-                badgeStatut = `<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #16a34a">Validé</span>`;
-                } else if (d.statut === "annul") {
-                badgeStatut = `<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #dc2626">Annulé</span>`;
-                }
+            // GÉNÉRATION BADGE - VERSION COMPATIBLE TOUTES VALEURS
+            let badgeStatut = "";
+            const statutLower = String(d.statut || "").toLowerCase().trim();
+            
+            // En attente : enattente, en_attente, en attente, attente
+            if (statutLower.includes("attente") || statutLower === "enattente" || statutLower === "en_attente") {
+                badgeStatut = `<span style="background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #f59e0b">⏳ En attente</span>`;
+            } 
+            // Validé : valid, validé, valide
+            else if (statutLower.includes("valid")) {
+                badgeStatut = `<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #16a34a">✓ Validé</span>`;
+            } 
+            // Annulé : annul, annulé
+            else if (statutLower.includes("annul")) {
+                badgeStatut = `<span style="background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; border:1px solid #dc2626">✗ Annulé</span>`;
+            }
+            // Valeur inconnue - Debug
+            else {
+                badgeStatut = `<span style="background:#e5e7eb; color:#374151; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700">${d.statut || "N/A"}</span>`;
+            }
 
-                tbody.innerHTML += `
+            tbody.innerHTML += `
                 <tr>
-                    <td><strong>${d.id}</strong><br><small style="color:#6b7280">${d.date}</small></td>
-                    <td>${d.produit}</td>
-                    <td style="text-align:right">${d.quantite} ${d.unite}</td>
-                    <td style="text-align:right">${nbOffres}</td>
-                    <td style="text-align:right">${prixMin > 0 ? prixMin.toLocaleString() + " Ar" : "-"}</td>
-                    <td>${badgeStatut}</td>
-                    <td style="text-align:center">
+                <td><strong>${d.id}</strong><br><small style="color:#6b7280">${d.date}</small></td>
+                <td>${d.produit}</td>
+                <td style="text-align:right">${d.quantite} ${d.unite}</td>
+                <td style="text-align:right">${nbOffres}</td>
+                <td style="text-align:right">${prixMin > 0 ? prixMin.toLocaleString() + " Ar" : "-"}</td>
+                <td>${badgeStatut}</td>
+                <td style="text-align:center">
                     <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:center">
-                        <button class="btn-compact" onclick="ouvrirComparaisonModal(${idx})" title="Comparer offres">
+                    <button class="btn-compact" onclick="ouvrirComparaisonModal(${idx})" title="Comparer offres">
                         <i class="fa-solid fa-scale-balanced"></i>
-                        </button>
-                        ${d.statut === "valid" ? `
+                    </button>
+                    ${statutLower.includes("valid") ? `
                         <button class="btn-compact" style="background:#3b82f6" onclick="modifierDemandeValidee(${idx})" title="Modifier">
-                            <i class="fa-solid fa-pen"></i>
+                        <i class="fa-solid fa-pen"></i>
                         </button>
-                        ` : ""}
-                        <button class="btn-compact btn-compact-danger" onclick="supprimerDemande(${idx})" title="Supprimer">
+                    ` : ""}
+                    <button class="btn-compact btn-compact-danger" onclick="supprimerDemande(${idx})" title="Supprimer">
                         <i class="fa-solid fa-trash"></i>
-                        </button>
+                    </button>
                     </div>
-                    </td>
+                </td>
                 </tr>`;
             });
+
 
             // CRÉER PAGINATION (identique à stock/historique)
             createPagination("dp-pagination", dpPage, totalItems, dpPerPage, goToDPPage, changeDPPerPage);
