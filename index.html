@@ -7864,7 +7864,7 @@
                 return `<tr><td>${article.produit}</td><td class="text-center">${article.unite}</td><td class="text-center">${article.quantite}</td><td class="text-right">${article.prix.toLocaleString()} Ar</td><td class="text-right">${amount.toLocaleString()} Ar</td></tr>`;
             }).join('');
             
-            const totalWords = numberToWords(total);
+            const totalWords = nombreEnLettres(total);
             const totalInWords = '» ' + totalWords.charAt(0).toUpperCase() + totalWords.slice(1) + ' Ariary"';
             
             const logoHtml = config.logo 
@@ -8015,6 +8015,108 @@
             return result.charAt(0).toUpperCase() + result.slice(1);
         }
 
+        // ========== CONVERSION NOMBRE EN LETTRES (FRANÇAIS - VERSION CORRIGÉE) ==========
+        function nombreEnLettres(nombre) {
+            if (nombre === 0) return "Zéro";
+            
+            const unites = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+            const dizaines = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante", "quatre-vingt", "quatre-vingt"];
+            const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+            
+            function convertirMoinsDeVingt(n) {
+                if (n < 10) return unites[n];
+                return teens[n - 10];
+            }
+            
+            function convertirMoinsDeCent(n) {
+                if (n < 20) return convertirMoinsDeVingt(n);
+                
+                const dizaine = Math.floor(n / 10);
+                const unite = n % 10;
+                
+                let resultat = dizaines[dizaine];
+                
+                // Cas spéciaux 70-79
+                if (dizaine === 7) {
+                    if (unite === 0) return "soixante-dix";
+                    if (unite === 1) return "soixante-et-onze";  // 71 : exception avec "et"
+                    return "soixante-" + teens[unite];
+                }
+                
+                // Cas spéciaux 90-99
+                if (dizaine === 9) {
+                    if (unite === 0) return "quatre-vingt-dix";
+                    if (unite === 1) return "quatre-vingt-onze";  // ✅ CORRIGÉ : SANS "et"
+                    return "quatre-vingt-" + teens[unite + 10];
+                }
+                
+                // 80 seul prend un "s"
+                if (dizaine === 8 && unite === 0) return "quatre-vingts";
+                
+                // 21, 31, 41, 51, 61 : avec "et"
+                if (unite === 1 && dizaine !== 8 && dizaine !== 7 && dizaine !== 9) {
+                    return resultat + "-et-un";
+                }
+                
+                // 81 : sans "s" et sans "et"
+                if (dizaine === 8 && unite === 1) return "quatre-vingt-un";
+                
+                // Autres cas standard
+                if (unite === 0) return resultat;
+                if (unite > 0) return resultat + "-" + unites[unite];
+                
+                return resultat;
+            }
+            
+            function convertirMoinsDeMille(n) {
+                if (n < 100) return convertirMoinsDeCent(n);
+                
+                const centaine = Math.floor(n / 100);
+                const reste = n % 100;
+                
+                let resultat = centaine === 1 ? "cent" : unites[centaine] + " cent";
+                if (centaine > 1 && reste === 0) resultat += "s";
+                if (reste > 0) resultat += " " + convertirMoinsDeCent(reste);
+                
+                return resultat;
+            }
+            
+            function convertirGroupe(n) {
+                if (n === 0) return "";
+                if (n === 1) return "mille";
+                return convertirMoinsDeMille(n) + " mille";
+            }
+            
+            // Décomposition
+            const milliards = Math.floor(nombre / 1000000000);
+            const millions = Math.floor((nombre % 1000000000) / 1000000);
+            const milliers = Math.floor((nombre % 1000000) / 1000);
+            const uniteFinale = nombre % 1000;
+            
+            let resultat = "";
+            
+            if (milliards > 0) {
+                resultat += convertirMoinsDeMille(milliards) + " milliard" + (milliards > 1 ? "s" : "");
+            }
+            
+            if (millions > 0) {
+                if (resultat) resultat += " ";
+                resultat += convertirMoinsDeMille(millions) + " million" + (millions > 1 ? "s" : "");
+            }
+            
+            if (milliers > 0) {
+                if (resultat) resultat += " ";
+                resultat += convertirGroupe(milliers);
+            }
+            
+            if (uniteFinale > 0) {
+                if (resultat) resultat += " ";
+                resultat += convertirMoinsDeMille(uniteFinale);
+            }
+            
+            // Capitaliser la première lettre
+            return resultat.charAt(0).toUpperCase() + resultat.slice(1);
+        }
 
 
         function convertToWords(num) {
