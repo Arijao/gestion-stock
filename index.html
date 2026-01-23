@@ -4243,23 +4243,44 @@
         }
 
         function ajouterArticleVente() {
-            const produit = normaliserNomProduit(document.getElementById('vente-produit-selected').value);
+            const produitNorm = normaliserNomProduit(document.getElementById('vente-produit-selected').value);
             const quantite = parseFloat(document.getElementById('vente-quantite').value);
             const prix = parseFloat(document.getElementById('vente-prix').value);
 
-            if(!produit || !quantite || !prix) {
+            if(!produitNorm || !quantite || !prix) {
                 alert('Remplissez tous les champs');
                 return;
             }
 
-            const dispo = getStockQty(produit);
-            if(!stock[produit] || dispo < quantite) {
+            // RECHERCHE INTELLIGENTE : Trouver la clé réelle
+            let cleReelle = null;
+            if(stock[produitNorm]) {
+                cleReelle = produitNorm;
+            } else {
+                // Recherche manuelle au cas où
+                for(let cle in stock) {
+                    if(normaliserNomProduit(cle) === produitNorm) {
+                        cleReelle = cle;
+                        break;
+                    }
+                }
+            }
+
+            if(!cleReelle || !stock[cleReelle]) {
+                alert('❌ Produit introuvable dans le stock');
+                console.error('Produit introuvable:', produitNorm);
+                return;
+            }
+
+            // Vérifier stock disponible avec la clé réelle
+            const dispo = getStockQty(cleReelle);
+            if(dispo < quantite) {
                 alert('Stock insuffisant');
                 return;
             }
 
-            // coût exact FIFO (preview) pour CE que tu ajoutes maintenant
-            const r = previewCogsForCurrentSale(produit, quantite);
+            // Coût exact FIFO (preview) avec la clé réelle
+            const r = previewCogsForCurrentSale(cleReelle, quantite);
             if(!r.ok) {
                 alert('Stock insuffisant');
                 return;
@@ -4269,27 +4290,32 @@
             const margeTot = totalVente - r.cogs;
             const margeUnit = margeTot / quantite;
 
+            // AJOUTER avec le nom NORMALISÉ (cohérence)
             articlesVente.push({
-                produit: produit,
+                produit: produitNorm,  // Nom normalisé
                 quantite: quantite,
                 prix: prix,
-                unite: stock[produit].unite,
+                unite: stock[cleReelle].unite,  // Unité depuis la clé réelle
                 total: totalVente,
                 cogs: r.cogs,
                 margeTot: margeTot,
                 margeUnit: margeUnit
             });
 
-            // vider champs (rehefa tsindrina ➕)
+            console.log('Article ajouté au panier:', produitNorm, '→ Qté:', quantite, '→ COGS:', r.cogs, 'Ar');
+
+            // Vider champs
             document.getElementById('vente-search').value = '';
             document.getElementById('vente-produit-selected').value = '';
             document.getElementById('vente-stock-dispo').value = '';
             document.getElementById('vente-quantite').value = '';
             document.getElementById('vente-prix').value = '';
+            document.getElementById('vente-pa-unit').value = '';
+            document.getElementById('vente-revient-total').value = '';
+            document.getElementById('vente-marge-total').value = '';
+            
             afficherArticlesVente();
         }
-
-
         function afficherArticlesVente() {
             const tbody = document.getElementById('vente-tbody');
             tbody.innerHTML = '';
@@ -4438,36 +4464,65 @@
             const client = document.getElementById('vente-client').value;
             const adresse = document.getElementById('vente-adresse').value;
             const numero = document.getElementById('vente-numero').value;
-            // ✅ DEBUG - Vérifier la valeur
             
             const delaiInput = document.getElementById('vente-delai');
             const delaiPaiement = delaiInput && delaiInput.value !== '' 
-            ? parseInt(delaiInput.value, 10) 
-            : 30;
-            
+                ? parseInt(delaiInput.value, 10) 
+                : 30;
             
             if(!date || !client || !adresse || !numero) {
                 alert('Remplissez tous les champs');
                 return;
             }
             
-            // Vérification et consommation FIFO
-            articlesVente.forEach(a => {
-                const lots = getLots(a.produit);
-                const r = consumeLotsFIFO(lots, a.quantite);
-                if(!r.ok){
-                    alert('Stock insuffisant (lots) – vente annulée');
+            // VÉRIFICATION ET CONSOMMATION FIFO avec normalisation
+            for(let a of articlesVente) {
+                // TROUVER LA CLÉ RÉELLE dans le stock
+                const produitNorm = normaliserNomProduit(a.produit);
+                let cleReelle = null;
+                
+                if(stock[produitNorm]) {
+                    cleReelle = produitNorm;
+                } else {
+                    // Recherche manuelle au cas où
+                    for(let cle in stock) {
+                        if(normaliserNomProduit(cle) === produitNorm) {
+                            cleReelle = cle;
+                            break;
+                        }
+                    }
+                }
+                
+                if(!cleReelle || !stock[cleReelle]) {
+                    alert(`❌ Produit "${a.produit}" introuvable dans le stock – vente annulée`);
                     return;
                 }
-                // esory lots lany (qte <= 0)
-                stock[a.produit].lots = lots.filter(l => (Number(l.qte)||0) > 0);
-            });
+                
+                // Consommer les lots avec la clé réelle
+                const lots = getLots(cleReelle);
+                const r = consumeLotsFIFO(lots, a.quantite);
+                
+                if(!r.ok) {
+                    alert(`❌ Stock insuffisant pour "${a.produit}" – vente annulée`);
+                    return;
+                }
+                
+                // Nettoyer les lots vides (qte <= 0)
+                stock[cleReelle].lots = lots.filter(l => (Number(l.qte) || 0) > 0);
+                
+                console.log(' Vente FIFO:', cleReelle, '→ Consommé:', a.quantite, '→ COGS:', r.cogs, 'Ar');
+            }
 
-            // ✅ VAOVAO - Calcul total
+            // Calcul total
             const totalVente = articlesVente.reduce((s, a) => s + a.total, 0);
             
             const dateLimiteCalculee = calculerDateLimite(date, delaiPaiement);
             
+            // NORMALISER les articles avant de sauvegarder dans l'historique
+            const articlesNormalises = articlesVente.map(a => ({
+                ...a,
+                produit: normaliserNomProduit(a.produit)
+            }));
             
             historique.push({
                 type: 'vente',
@@ -4475,10 +4530,10 @@
                 numero: numero,
                 tiers: client,
                 adresse: adresse,
-                articles: [...articlesVente],
+                articles: articlesNormalises,  // Articles avec noms normalisés
                 total: totalVente,
                 
-                // ✅ GESTION PAIEMENT - Avec délai dynamique:
+                // Gestion paiement
                 statutPaiement: 'impayé',
                 dateLimite: dateLimiteCalculee,
                 montantPaye: 0,
@@ -4496,7 +4551,7 @@
             afficherArticlesVente();
             document.getElementById('vente-client').value = '';
             document.getElementById('vente-adresse').value = '';
-            document.getElementById('vente-delai').value = '30'; // ✅ Reset à 30
+            document.getElementById('vente-delai').value = '30';
             genererNumeroVente();
             afficherStock();
             updateDashboard();
@@ -7907,14 +7962,17 @@
         let demandePrixEnCours = null; // Demande actuellement ouverte dans modal
 
         function creerDemandePrix() {
-            const produit = document.getElementById('dp-produit').value.trim();
+            const produitSaisi = document.getElementById('dp-produit').value.trim();
             const quantite = parseFloat(document.getElementById('dp-quantite').value) || 0;
             const unite = document.getElementById('dp-unite').value;
             
-            if(!produit || quantite <= 0) {
+            if(!produitSaisi || quantite <= 0) {
                 alert('Remplissez produit et quantité');
                 return;
             }
+            
+            // NORMALISATION du nom de produit
+            const produit = normaliserNomProduit(produitSaisi);
             
             // Générer numéro
             const date = new Date();
@@ -7927,7 +7985,7 @@
             const demande = {
                 id: numero,
                 date: date.toISOString().split('T')[0],
-                produit: produit,
+                produit: produit,  // Nom normalisé
                 quantite: quantite,
                 unite: unite,
                 fournisseurs: [],
@@ -7937,13 +7995,15 @@
             demandesPrix.push(demande);
             sauvegarderDonnees();
             
+            console.log(' Demande de prix créée:', numero, '→ Produit normalisé:', produit);
+            
             // Clear form
             document.getElementById('dp-produit').value = '';
             document.getElementById('dp-quantite').value = '1';
             
             afficherDemandesPrix();
             
-            alert(`✅ Demande ${numero} créée!\n\nAjoutez maintenant les offres des fournisseurs.`);
+            alert(` Demande ${numero} créée!\n\nAjoutez maintenant les offres des fournisseurs.`);
             
             // Ouvrir directement le modal comparaison
             ouvrirComparaisonModal(demandesPrix.length - 1);
