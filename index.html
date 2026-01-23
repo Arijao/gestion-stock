@@ -2757,13 +2757,7 @@
                                 <div class="form-group">
                                     <label>Unité</label>
                                     <select id="dp-unite">
-                                        <option value="Pièce">Pièce</option>
-                                        <option value="Pqt">Paquet</option>
-                                        <option value="Boite">Boîte</option>
-                                        <option value="Carton">Carton</option>
-                                        <option value="Kg">Kg</option>
-                                        <option value="Litre">Litre</option>
-                                        <option value="Metre">Mètre</option>
+                                        <!-- Généré dynamiquement -->
                                     </select>
                                 </div>
                             </div>
@@ -2904,14 +2898,7 @@
                             <div class="form-group">
                                 <label>Unité</label>
                                 <select id="achat-unite">
-                                    <option value="Pièce">Pièce</option>
-                                    <option value="Pqt">Paquet</option>
-                                    <option value="Boite">Boîte</option>
-                                    <option value="Carton">Carton</option>
-                                    <option value="Lot">Lot</option>
-                                    <option value="Kg">Kg</option>
-                                    <option value="Litre">Litre</option>
-                                    <option value="Mètre">Mètre</option>
+                                    <!-- Généré dynamiquement -->
                                 </select>
                             </div>
                         </div>
@@ -3335,7 +3322,7 @@
                 <p id="achat-modal-info" style="margin: 0; font-size: 13px; color: #4b5563;"></p>
             </div>
             <div class="modal-body">
-                <!-- ✅ UTILISATION DU NOUVEAU WRAPPER -->
+                <!-- UTILISATION DU NOUVEAU WRAPPER -->
                 <div class="modal-table-wrapper">
                     <table class="modal-table">
                         <thead>
@@ -3495,7 +3482,214 @@
         let historiqueSearchQuery = '';
         let historiqueTypeFilter = 'tous';
  
+        // ==================== SYSTÈME D'UNITÉS CENTRALISÉ ====================
 
+        const UNITES_CONFIG = {
+            // Catégories d'unités
+            categories: {
+                comptage: {
+                    label: 'Comptage',
+                    icon: '🔢',
+                    unites: [
+                        { code: 'u', label: 'Unité', labelLong: 'Unité', abbrev: 'u' },
+                        { code: 'pcs', label: 'Pièce', labelLong: 'Pièce(s)', abbrev: 'pcs' },
+                        { code: 'art', label: 'Article', labelLong: 'Article(s)', abbrev: 'art' },
+                        { code: 'lot', label: 'Lot', labelLong: 'Lot(s)', abbrev: 'lot' },
+                        { code: 'pack', label: 'Pack', labelLong: 'Pack(s)', abbrev: 'pk' },
+                        { code: 'pqt', label: 'Paquet', labelLong: 'Paquet(s)', abbrev: 'pqt' },
+                        { code: 'ctn', label: 'Carton', labelLong: 'Carton(s)', abbrev: 'ctn' },
+                        { code: 'bte', label: 'Boîte', labelLong: 'Boîte(s)', abbrev: 'bte' },
+                        { code: 'scht', label: 'Sachet', labelLong: 'Sachet(s)', abbrev: 'scht' },
+                        { code: 'btl', label: 'Bouteille', labelLong: 'Bouteille(s)', abbrev: 'btl' },
+                        { code: 'bid', label: 'Bidon', labelLong: 'Bidon(s)', abbrev: 'bid' },
+                        { code: 'sac', label: 'Sac', labelLong: 'Sac(s)', abbrev: 'sac' },
+                        { code: 'plt', label: 'Palette', labelLong: 'Palette(s)', abbrev: 'plt' }
+                    ]
+                },
+                mesure: {
+                    label: 'Mesure',
+                    icon: '📏',
+                    unites: [
+                        { code: 'kg', label: 'Kilogramme', labelLong: 'Kilogramme(s)', abbrev: 'kg', systeme: 'metrique' },
+                        { code: 'g', label: 'Gramme', labelLong: 'Gramme(s)', abbrev: 'g', systeme: 'metrique' },
+                        { code: 't', label: 'Tonne', labelLong: 'Tonne(s)', abbrev: 't', systeme: 'metrique' },
+                        { code: 'l', label: 'Litre', labelLong: 'Litre(s)', abbrev: 'L', systeme: 'metrique' },
+                        { code: 'ml', label: 'Millilitre', labelLong: 'Millilitre(s)', abbrev: 'ml', systeme: 'metrique' },
+                        { code: 'm', label: 'Mètre', labelLong: 'Mètre(s)', abbrev: 'm', systeme: 'metrique' },
+                        { code: 'cm', label: 'Centimètre', labelLong: 'Centimètre(s)', abbrev: 'cm', systeme: 'metrique' },
+                        { code: 'm2', label: 'Mètre carré', labelLong: 'Mètre(s) carré(s)', abbrev: 'm²', systeme: 'metrique' },
+                        { code: 'm3', label: 'Mètre cube', labelLong: 'Mètre(s) cube(s)', abbrev: 'm³', systeme: 'metrique' }
+                    ]
+                }
+            },
+
+            // Unité par défaut
+            default: 'pcs',
+
+            // Conversions possibles (pour évolution future)
+            conversions: {
+                // Masse
+                'kg_g': 1000,
+                'kg_t': 0.001,
+                // Volume
+                'l_ml': 1000,
+                // Longueur
+                'm_cm': 100
+            }
+        };
+
+        // ==================== FONCTIONS UTILITAIRES UNITÉS ====================
+
+        /**
+         * Récupère la liste complète des unités (toutes catégories)
+         * @returns {Array} Liste des objets unités
+         */
+        function getUnitesList() {
+            const unites = [];
+            for(let catKey in UNITES_CONFIG.categories) {
+                const cat = UNITES_CONFIG.categories[catKey];
+                unites.push(...cat.unites);
+            }
+            return unites;
+        }
+
+        /**
+         * Récupère un objet unité par son code
+         * @param {string} code - Code de l'unité (ex: 'kg', 'pcs')
+         * @returns {Object|null} Objet unité ou null
+         */
+        function getUniteByCode(code) {
+            if(!code) return null;
+            const unites = getUnitesList();
+            return unites.find(u => u.code.toLowerCase() === code.toLowerCase()) || null;
+        }
+
+        /**
+         * Vérifie si un code d'unité est valide
+         * @param {string} code - Code à vérifier
+         * @returns {boolean}
+         */
+        function isUniteValide(code) {
+            return getUniteByCode(code) !== null;
+        }
+
+        /**
+         * Récupère le label d'affichage d'une unité
+         * @param {string} code - Code de l'unité
+         * @param {boolean} long - Utiliser le label long (défaut: false)
+         * @returns {string} Label de l'unité
+         */
+        function getUniteLabel(code, long = false) {
+            const unite = getUniteByCode(code);
+            if(!unite) return code || '';
+            return long ? unite.labelLong : unite.label;
+        }
+
+        /**
+         * Récupère l'abréviation d'une unité
+         * @param {string} code - Code de l'unité
+         * @returns {string} Abréviation
+         */
+        function getUniteAbbrev(code) {
+            const unite = getUniteByCode(code);
+            return unite ? unite.abbrev : code;
+        }
+
+        /**
+         * Génère le HTML d'un <select> d'unités avec catégories
+         * @param {string} selectedCode - Code de l'unité sélectionnée (optionnel)
+         * @returns {string} HTML des options
+         */
+        function genererOptionsUnites(selectedCode = null) {
+            let html = '';
+            
+            for(let catKey in UNITES_CONFIG.categories) {
+                const cat = UNITES_CONFIG.categories[catKey];
+                
+                // Groupe optgroup pour chaque catégorie
+                html += `<optgroup label="${cat.icon} ${cat.label}">`;
+                
+                cat.unites.forEach(unite => {
+                    const selected = selectedCode && selectedCode.toLowerCase() === unite.code.toLowerCase() ? 'selected' : '';
+                    html += `<option value="${unite.code}" ${selected}>${unite.label} (${unite.abbrev})</option>`;
+                });
+                
+                html += '</optgroup>';
+            }
+            
+            return html;
+        }
+
+        /**
+         * Normalise un code d'unité (ancienne valeur → nouveau code)
+         * Permet la migration des données existantes
+         * @param {string} ancienneUnite - Ancienne valeur (ex: "Pièce", "Kg")
+         * @returns {string} Code normalisé (ex: "pcs", "kg")
+         */
+        function normaliserUnite(ancienneUnite) {
+            if(!ancienneUnite) return UNITES_CONFIG.default;
+            
+            const ancien = ancienneUnite.toLowerCase().trim();
+            
+            // Mapping des anciennes valeurs vers les nouveaux codes
+            const mapping = {
+                'pièce': 'pcs',
+                'piece': 'pcs',
+                'pcs': 'pcs',
+                'unité': 'u',
+                'unite': 'u',
+                'u': 'u',
+                'paquet': 'pqt',
+                'pqt': 'pqt',
+                'pack': 'pack',
+                'pk': 'pack',
+                'carton': 'ctn',
+                'ctn': 'ctn',
+                'boîte': 'bte',
+                'boite': 'bte',
+                'bte': 'bte',
+                'lot': 'lot',
+                'article': 'art',
+                'art': 'art',
+                'sachet': 'scht',
+                'scht': 'scht',
+                'bouteille': 'btl',
+                'btl': 'btl',
+                'bidon': 'bid',
+                'bid': 'bid',
+                'sac': 'sac',
+                'palette': 'plt',
+                'plt': 'plt',
+                'kilogramme': 'kg',
+                'kg': 'kg',
+                'gramme': 'g',
+                'g': 'g',
+                'tonne': 't',
+                't': 't',
+                'litre': 'l',
+                'l': 'l',
+                'millilitre': 'ml',
+                'ml': 'ml',
+                'mètre': 'm',
+                'metre': 'm',
+                'm': 'm',
+                'centimètre': 'cm',
+                'centimetre': 'cm',
+                'cm': 'cm',
+                'mètre carré': 'm2',
+                'metre carre': 'm2',
+                'm²': 'm2',
+                'm2': 'm2',
+                'mètre cube': 'm3',
+                'metre cube': 'm3',
+                'm³': 'm3',
+                'm3': 'm3'
+            };
+            
+            return mapping[ancien] || UNITES_CONFIG.default;
+        }
+
+        console.log('✅ Système d\'unités chargé:', getUnitesList().length, 'unités disponibles');
 
         // Window onload
         window.onload = async function() {
@@ -3851,24 +4045,39 @@
         
         function afficherArticlesAchat() {
             const tbody = document.getElementById('achat-tbody');
-            tbody.innerHTML = '';
+            const section = document.getElementById('achat-articles-section');
+            
+            if(!articlesAchat || !articlesAchat.length) {
+                if(section) section.style.display = 'none';
+                return;
+            }
+            
+            if(section) section.style.display = 'block';
+            if(tbody) tbody.innerHTML = '';
+            
             let total = 0;
             
             articlesAchat.forEach((a, i) => {
                 total += a.total;
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${a.produit}</td>
-                        <td>${a.quantite}</td>
-                        <td>${a.unite}</td>
-                        <td>${a.prix.toLocaleString()} Ar</td>
-                        <td>${a.total.toLocaleString()} Ar</td>
-                        <td><button class="btn btn-pdf" onclick="supprimerArticleAchat(${i})">🗑️</button></td>
+                        <td style="text-align:right;">${a.quantite}</td>
+                        <td>${getUniteAbbrev(a.unite)}</td>
+                        <td style="text-align:right;">${a.prix.toLocaleString()} Ar</td>
+                        <td style="text-align:right;">${a.total.toLocaleString()} Ar</td>
+                        <td>
+                            <button class="btn-compact btn-compact-danger" onclick="retirerArticleAchat(${i})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
             
             document.getElementById('achat-total').textContent = total.toLocaleString() + ' Ar';
+        
             document.getElementById('achat-articles-section').style.display = articlesAchat.length > 0 ? 'block' : 'none';
         }
         
@@ -3909,7 +4118,15 @@
 
             // --- Mise à jour stock (lots) ---
             articlesAchat.forEach(a => {
-                // ✅ NORMALISATION FORCÉE : Toujours utiliser la clé normalisée
+
+                // VALIDATION : Normaliser l'unité
+                a.unite = normaliserUnite(a.unite);
+                
+                if(!isUniteValide(a.unite)) {
+                    console.warn(' Unité invalide détectée:', a.unite, '→ Reset à', UNITES_CONFIG.default);
+                    a.unite = UNITES_CONFIG.default;
+                }
+                // NORMALISATION FORCÉE : Toujours utiliser la clé normalisée
                 const cleNormalisee = normaliserNomProduit(a.produit);
                 
                 if (!stock[cleNormalisee]) {
@@ -4290,6 +4507,14 @@
             const margeTot = totalVente - r.cogs;
             const margeUnit = margeTot / quantite;
 
+            // NORMALISER ET VALIDER L'UNITÉ
+            let uniteNormalisee = normaliserUnite(stock[cleReelle].unite);
+            
+            if(!isUniteValide(uniteNormalisee)) {
+                console.warn('⚠️ Unité invalide détectée:', stock[cleReelle].unite, '→ Reset à', UNITES_CONFIG.default);
+                uniteNormalisee = UNITES_CONFIG.default;
+            }
+
             // AJOUTER avec le nom NORMALISÉ (cohérence)
             articlesVente.push({
                 produit: produitNorm,  // Nom normalisé
@@ -4318,24 +4543,39 @@
         }
         function afficherArticlesVente() {
             const tbody = document.getElementById('vente-tbody');
-            tbody.innerHTML = '';
+            const section = document.getElementById('vente-articles-section');
+            
+            if(!articlesVente || !articlesVente.length) {
+                if(section) section.style.display = 'none';
+                return;
+            }
+            
+            if(section) section.style.display = 'block';
+            if(tbody) tbody.innerHTML = '';
+            
             let total = 0;
             
             articlesVente.forEach((a, i) => {
                 total += a.total;
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${a.produit}</td>
-                        <td>${a.quantite}</td>
-                        <td>${a.unite}</td>
-                        <td>${a.prix.toLocaleString()} Ar</td>
-                        <td>${a.total.toLocaleString()} Ar</td>
-                        <td><button class="btn btn-pdf" onclick="supprimerArticleVente(${i})">🗑️</button></td>
+                        <td style="text-align:right;">${a.quantite}</td>
+                        <td>${getUniteAbbrev(a.unite)}</td>
+                        <td style="text-align:right;">${a.prix.toLocaleString()} Ar</td>
+                        <td style="text-align:right;">${a.total.toLocaleString()} Ar</td>
+                        <td>
+                            <button class="btn-compact btn-compact-danger" onclick="retirerArticleVente(${i})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
             
             document.getElementById('vente-total').textContent = total.toLocaleString() + ' Ar';
+        
             document.getElementById('vente-articles-section').style.display = articlesVente.length > 0 ? 'block' : 'none';
         }
 
@@ -4633,7 +4873,7 @@
                             ${stock[item.produit].raisonArchivage ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Raison: ${stock[item.produit].raisonArchivage}</div>` : ''}
                         </td>
                         <td style="text-align:right">${item.qte}</td>
-                        <td>${item.unite}</td>
+                        <td>${getUniteAbbrev(item.unite)}</td>
                         <td style="text-align:right">
                             <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
                         </td>
@@ -4650,7 +4890,7 @@
                     tbody.innerHTML += `<tr>
                         <td>${item.produit}</td>
                         <td style="text-align:right">${item.qte}</td>
-                        <td>${item.unite}</td>
+                        <td>${getUniteAbbrev(item.unite)}</td>
                         <td style="text-align:right">
                             <div style="font-weight:600">${prixMoy.toLocaleString()} Ar</div>
                             <small style="color:#666; font-size:11px">${nbLots} lot${nbLots>1?'s':''}</small>
@@ -9542,6 +9782,28 @@
             alert('✓ Produit réactivé avec succès');
         }
 
+        // ==================== INITIALISATION DES SELECTS UNITÉS ====================
+
+        function initialiserSelectsUnites() {
+            const selects = [
+                'achat-unite',
+                'dp-unite'
+                // Ajoutez d'autres IDs si nécessaire
+            ];
+            
+            selects.forEach(selectId => {
+                const selectEl = document.getElementById(selectId);
+                if(selectEl) {
+                    selectEl.innerHTML = genererOptionsUnites(UNITES_CONFIG.default);
+                    console.log('Select initialisé:', selectId);
+                }
+            });
+        }
+
+        // Appeler au chargement de la page
+        window.addEventListener('DOMContentLoaded', () => {
+            initialiserSelectsUnites();
+        });
     </script>
 </body>
 </html>
