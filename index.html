@@ -2110,6 +2110,18 @@
             border-color: #dc2626 !important;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
         }
+
+        /* Animation pour le message d'erreur */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
         /* Fix for grid on large screens */
         @media (min-width: 1200px) {
             .form-grid {
@@ -3033,6 +3045,9 @@
                             <div class="form-group">
                                 <label>Quantité</label>
                                 <input type="number" id="vente-quantite" min="1" oninput="updateVenteCostAndMargeUI(); validerQuantiteVente();">
+                                <div id="vente-quantite-error" style="display:none; color:#dc2626; font-size:12px; font-weight:600; margin-top:6px; animation:fadeIn 0.3s ease-out;">
+                                    ⚠️ Stock insuffisant
+                                </div>
                             </div>
                         </div>
                         
@@ -4598,8 +4613,9 @@
         function validerQuantiteVente() {
             const quantiteInput = document.getElementById('vente-quantite');
             const stockDispoInput = document.getElementById('vente-stock-dispo');
+            const errorMsg = document.getElementById('vente-quantite-error');
             
-            if (!quantiteInput || !stockDispoInput) return;
+            if (!quantiteInput || !stockDispoInput || !errorMsg) return;
             
             const quantiteSaisie = parseFloat(quantiteInput.value) || 0;
             const stockDispoText = stockDispoInput.value;
@@ -4608,11 +4624,16 @@
             const stockMatch = stockDispoText.match(/(\d+(\.\d+)?)/);
             const stockDispo = stockMatch ? parseFloat(stockMatch[1]) : 0;
             
-            // Appliquer ou retirer la classe d'erreur
-            if (quantiteSaisie > 0 && quantiteSaisie > stockDispo) {
+            // Vérifier si quantité dépasse le stock
+            const estInsuffisant = quantiteSaisie > 0 && quantiteSaisie > stockDispo;
+            
+            // Appliquer ou retirer la classe d'erreur sur le champ
+            if (estInsuffisant) {
                 quantiteInput.classList.add('quantite-error');
+                errorMsg.style.display = 'block';
             } else {
                 quantiteInput.classList.remove('quantite-error');
+                errorMsg.style.display = 'none';
             }
         }
 
